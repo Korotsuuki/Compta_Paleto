@@ -1,0 +1,97 @@
+"use client";
+
+import Link from "next/link";
+import { useState } from "react";
+import { createClient } from "@/lib/supabase/client";
+import { EmployeeFull, Grade, money } from "@/lib/types";
+
+export default function EmployeesTable({
+  employees,
+  grades,
+  canEdit,
+}: {
+  employees: EmployeeFull[];
+  grades: Grade[];
+  canEdit: boolean;
+}) {
+  const supabase = createClient();
+  const [rows, setRows] = useState(employees);
+
+  const updateGrade = async (id: string, grade_id: string) => {
+    setRows((r) => r.map((e) => (e.id === id ? { ...e, grade_id } : e)));
+    await supabase.from("profiles").update({ grade_id }).eq("id", id);
+  };
+
+  const toggleEtat = async (id: string, etat: "actif" | "absent") => {
+    const next = etat === "actif" ? "absent" : "actif";
+    setRows((r) => r.map((e) => (e.id === id ? { ...e, etat: next } : e)));
+    await supabase.from("profiles").update({ etat: next }).eq("id", id);
+  };
+
+  return (
+    <div className="ticket overflow-x-auto">
+      <table className="w-full text-sm min-w-[900px]">
+        <thead>
+          <tr className="text-left text-asphalt-600/80 font-mono text-xs uppercase border-b border-asphalt-700">
+            <th className="p-4 font-normal">Employé</th>
+            <th className="p-4 font-normal">Grade</th>
+            <th className="p-4 font-normal">État</th>
+            <th className="p-4 font-normal">Téléphone</th>
+            <th className="p-4 font-normal">C.A Global</th>
+            <th className="p-4 font-normal">Salaire</th>
+            <th className="p-4 font-normal"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((e) => (
+            <tr key={e.id} className="border-b border-asphalt-800 hover:bg-asphalt-900/50">
+              <td className="p-4">
+                <div className="text-white font-medium">
+                  {e.prenom} {e.nom}
+                </div>
+                <div className="text-xs font-mono text-asphalt-600/70">#{e.employee_code}</div>
+              </td>
+              <td className="p-4">
+                {canEdit ? (
+                  <select
+                    value={e.grade_id ?? ""}
+                    onChange={(ev) => updateGrade(e.id, ev.target.value)}
+                    className="bg-asphalt-800 border border-asphalt-700 rounded-sm px-2 py-1 text-white text-xs"
+                  >
+                    <option value="">—</option>
+                    {grades.map((g) => (
+                      <option key={g.id} value={g.id}>
+                        {g.nom}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <span className="text-signal text-xs font-mono">{e.grade_nom ?? "—"}</span>
+                )}
+              </td>
+              <td className="p-4">
+                <button
+                  onClick={() => canEdit && toggleEtat(e.id, e.etat)}
+                  disabled={!canEdit}
+                  className={`text-xs font-mono px-2 py-1 rounded-sm ${
+                    e.etat === "actif" ? "bg-ok/20 text-ok" : "bg-caution/20 text-caution"
+                  }`}
+                >
+                  {e.etat}
+                </button>
+              </td>
+              <td className="p-4 font-mono text-asphalt-600">{e.telephone ?? "—"}</td>
+              <td className="p-4 font-mono text-white">{money(e.ca_global)}</td>
+              <td className="p-4 font-mono text-signal">{money(e.salaire)}</td>
+              <td className="p-4">
+                <Link href={`/employes/${e.id}`} className="text-xs text-steel-light hover:underline">
+                  Voir la fiche →
+                </Link>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
