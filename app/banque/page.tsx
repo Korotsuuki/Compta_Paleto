@@ -1,17 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Shell from "@/components/Shell";
-import ChargesTable from "@/components/ChargesTable";
+import BanquePanel from "@/components/BanquePanel";
 
-const LABELS: Record<string, string> = {
-  kits_nourriture: "Kits / Nourriture",
-  matieres_premieres: "Matières premières",
-  publicite: "Publicité",
-  impots: "Impôts",
-  autre: "Autre",
-};
-
-export default async function ChargesPage() {
+export default async function BanquePage() {
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getUser();
 
@@ -24,9 +16,13 @@ export default async function ChargesPage() {
   if (me?.role === "employe") redirect(`/employes/${auth.user?.id}`);
   if (me?.role === "gouv") redirect("/gouv");
 
-  const { data: charges } = await supabase.from("charges").select("*").order("date", { ascending: false });
+  const { data: mouvements } = await supabase
+    .from("banque_mouvements")
+    .select("*")
+    .order("date", { ascending: false })
+    .order("created_at", { ascending: false });
 
-  const canEdit = me?.role === "direction" || me?.role === "gerant";
+  const { data: solde } = await supabase.from("v_banque_solde").select("solde").single();
 
   return (
     <Shell
@@ -36,14 +32,18 @@ export default async function ChargesPage() {
       userId={auth.user?.id}
     >
       <header className="mb-8">
-        <div className="stamp text-signal text-xs mb-3">Dépenses</div>
-        <h1 className="font-display text-3xl uppercase text-white">Charges</h1>
+        <div className="stamp text-signal text-xs mb-3">Trésorerie</div>
+        <h1 className="font-display text-3xl uppercase text-white">Banque</h1>
         <p className="text-asphalt-600/80 font-mono text-sm mt-1">
-          Achats, prestataires et impôts imputés au registre
+          Solde de l'entreprise et mouvements (dépôts / retraits)
         </p>
       </header>
 
-      <ChargesTable charges={(charges ?? []) as any} labels={LABELS} canEdit={!!canEdit} />
+      <BanquePanel
+        mouvements={(mouvements ?? []) as any}
+        solde={solde?.solde ?? 0}
+        canManage={me?.role === "direction"}
+      />
     </Shell>
   );
 }

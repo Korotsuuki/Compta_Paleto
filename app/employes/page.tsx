@@ -3,6 +3,7 @@ import Shell from "@/components/Shell";
 import EmployeesTable from "@/components/EmployeesTable";
 import ValidationQueue from "@/components/ValidationQueue";
 import { EmployeeFull, Grade } from "@/lib/types";
+import { redirect } from "next/navigation";
 
 export default async function EmployesPage() {
   const supabase = await createClient();
@@ -13,6 +14,9 @@ export default async function EmployesPage() {
     .select("prenom, nom, role, grades:grade_id(nom)")
     .eq("id", auth.user?.id)
     .single();
+
+  if (me?.role === "employe") redirect(`/employes/${auth.user?.id}`);
+  if (me?.role === "gouv") redirect("/gouv");
 
   const { data: employees } = await supabase
     .from("v_employees_full")
@@ -35,6 +39,7 @@ export default async function EmployesPage() {
       displayName={me ? `${me.prenom ?? ""} ${me.nom ?? ""}`.trim() : undefined}
       gradeNom={(me as any)?.grades?.nom}
       role={me?.role}
+      userId={auth.user?.id}
     >
       <header className="mb-8">
         <div className="stamp text-signal text-xs mb-3">Effectif</div>

@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
 import Shell from "@/components/Shell";
 import ContractsPanel from "@/components/ContractsPanel";
 
@@ -12,6 +13,9 @@ export default async function ContratsPage() {
     .eq("id", auth.user?.id)
     .single();
 
+  if (me?.role === "employe") redirect(`/employes/${auth.user?.id}`);
+  if (me?.role === "gouv") redirect("/gouv");
+
   const { data: contrats } = await supabase
     .from("contrats")
     .select("*")
@@ -20,13 +24,14 @@ export default async function ContratsPage() {
   const { data: employees } = await supabase.from("profiles").select("id, prenom, nom").order("prenom");
   const { data: partenaires } = await supabase.from("partenaires").select("id, nom").order("nom");
 
-  const canManage = me?.role === "direction" || me?.role === "cadre";
+  const canManage = me?.role === "direction" || me?.role === "drh";
 
   return (
     <Shell
       displayName={me ? `${me.prenom ?? ""} ${me.nom ?? ""}`.trim() : undefined}
       gradeNom={(me as any)?.grades?.nom}
       role={me?.role}
+      userId={auth.user?.id}
     >
       <header className="mb-8">
         <div className="stamp text-signal text-xs mb-3">Documents</div>
@@ -39,7 +44,7 @@ export default async function ContratsPage() {
       <ContractsPanel
         contracts={(contrats ?? []) as any}
         canManage={!!canManage}
-        canDelete={me?.role === "direction"}
+        canDelete={!!canManage}
         employees={(employees ?? []).map((e: any) => ({
           id: e.id,
           label: `${e.prenom ?? ""} ${e.nom ?? ""}`.trim() || "Sans nom",

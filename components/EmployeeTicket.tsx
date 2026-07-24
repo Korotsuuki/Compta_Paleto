@@ -312,7 +312,7 @@ export default function EmployeeTicket({
         {customService && (
           <div className="ticket p-5">
             <h2 className="font-display uppercase text-white text-sm mb-4 tracking-wide">
-              Facture
+              Nettoyages & Événements
             </h2>
             <div className="ticket-stub pl-3 space-y-2">
               <div className="flex items-center justify-between">

@@ -1,4 +1,4 @@
-export type Role = "direction" | "cadre" | "employe";
+export type Role = "direction" | "drh" | "gerant" | "chef_equipe" | "employe" | "gouv";
 export type Etat = "actif" | "absent";
 export type GradeType = "fixe" | "pourcentage";
 export type ServiceCategorie = "depannage" | "prestation" | "nettoyage" | "custom";
@@ -12,6 +12,7 @@ export interface Grade {
   pourcentage: number;
   plafond: number;
   sort_order: number;
+  est_mecano: boolean;
 }
 
 export interface Profile {
@@ -130,6 +131,35 @@ export interface RegistreHistorique {
   benefice_net: number;
   created_at: string;
 }
+
+export interface BanqueMouvement {
+  id: string;
+  type: "depot" | "retrait";
+  montant: number;
+  motif: string | null;
+  date: string;
+  created_at: string;
+}
+
+export const ROLE_LABELS: Record<Role, string> = {
+  direction: "Direction",
+  drh: "DRH",
+  gerant: "Gérant",
+  chef_equipe: "Chef d'équipe",
+  employe: "Employé",
+  gouv: "Gouv (externe)",
+};
+
+// Déduit automatiquement le palier d'accès à partir du nom du grade choisi,
+// pour éviter à la Direction de devoir régler grade + rôle séparément.
+const GRADE_TO_ROLE: Record<string, Role> = {
+  Patron: "direction",
+  "Co-Patron": "direction",
+  DRH: "drh",
+  Gérant: "gerant",
+  "Chef d'équipe": "chef_equipe",
+};
+export const roleForGradeName = (nom: string | null | undefined): Role => GRADE_TO_ROLE[nom ?? ""] ?? "employe";
 
 export const money = (n: number | null | undefined) =>
   new Intl.NumberFormat("fr-FR", { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n ?? 0) + " $";

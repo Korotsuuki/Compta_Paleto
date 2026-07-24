@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Charge, ChargeCategorie, money } from "@/lib/types";
-import { Plus } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 
 export default function ChargesTable({
   charges,
@@ -41,6 +41,12 @@ export default function ChargesTable({
       .single();
     if (data) setRows((r) => [data as Charge, ...r]);
     setForm({ categorie: "autre", prestataire: "", article: "", montant: "", quantite: "1" });
+  };
+
+  const deleteCharge = async (id: string) => {
+    if (!confirm("Supprimer cette charge ?")) return;
+    await supabase.from("charges").delete().eq("id", id);
+    setRows((r) => r.filter((c) => c.id !== id));
   };
 
   return (
@@ -100,6 +106,7 @@ export default function ChargesTable({
               <th className="p-4 font-normal">Article</th>
               <th className="p-4 font-normal">Date</th>
               <th className="p-4 font-normal text-right">Montant</th>
+              <th className="p-4 font-normal"></th>
             </tr>
           </thead>
           <tbody>
@@ -112,11 +119,22 @@ export default function ChargesTable({
                   {new Date(c.date).toLocaleDateString("fr-FR")}
                 </td>
                 <td className="p-4 font-mono text-right text-white">{money(c.montant)}</td>
+                <td className="p-4 text-right">
+                  {canEdit && (
+                    <button
+                      onClick={() => deleteCharge(c.id)}
+                      className="p-1.5 bg-bad/20 hover:bg-bad/30 text-bad rounded-sm"
+                      title="Supprimer"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  )}
+                </td>
               </tr>
             ))}
             {rows.length === 0 && (
               <tr>
-                <td colSpan={5} className="p-6 text-center text-asphalt-600/60">
+                <td colSpan={6} className="p-6 text-center text-asphalt-600/60">
                   Aucune charge enregistrée.
                 </td>
               </tr>

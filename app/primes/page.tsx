@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
 import Shell from "@/components/Shell";
 import { money } from "@/lib/types";
 
@@ -12,6 +13,9 @@ export default async function PrimesPage() {
     .eq("id", auth.user?.id)
     .single();
 
+  if (me?.role === "employe") redirect(`/employes/${auth.user?.id}`);
+  if (me?.role === "gouv") redirect("/gouv");
+
   const { data: primes } = await supabase.from("primes").select("*").order("semaine");
 
   return (
@@ -19,6 +23,7 @@ export default async function PrimesPage() {
       displayName={me ? `${me.prenom ?? ""} ${me.nom ?? ""}`.trim() : undefined}
       gradeNom={(me as any)?.grades?.nom}
       role={me?.role}
+      userId={auth.user?.id}
     >
       <header className="mb-8">
         <div className="stamp text-signal text-xs mb-3">Enveloppe hebdomadaire</div>

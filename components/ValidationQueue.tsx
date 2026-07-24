@@ -2,18 +2,26 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { Grade, Profile } from "@/lib/types";
+import { Grade, Profile, roleForGradeName } from "@/lib/types";
 import { Check, X } from "lucide-react";
 
 export default function ValidationQueue({ pending, grades }: { pending: Profile[]; grades: Grade[] }) {
   const supabase = createClient();
   const [rows, setRows] = useState(pending);
   const [selectedGrade, setSelectedGrade] = useState<Record<string, string>>({});
+  const [isGouv, setIsGouv] = useState<Record<string, boolean>>({});
 
   const approve = async (id: string) => {
+    if (isGouv[id]) {
+      await supabase.from("profiles").update({ valide: true, grade_id: null, role: "gouv" }).eq("id", id);
+      setRows((r) => r.filter((p) => p.id !== id));
+      return;
+    }
     const grade_id = selectedGrade[id];
     if (!grade_id) return;
-    await supabase.from("profiles").update({ valide: true, grade_id, role: "employe" }).eq("id", id);
+    const grade = grades.find((g) => g.id === grade_id);
+    const role = roleForGradeName(grade?.nom);
+    await supabase.from("profiles").update({ valide: true, grade_id, role }).eq("id", id);
     setRows((r) => r.filter((p) => p.id !== id));
   };
 
@@ -28,12 +36,12 @@ export default function ValidationQueue({ pending, grades }: { pending: Profile[
 
   return (
     <div className="ticket overflow-x-auto border-caution/40">
-      <table className="w-full text-sm min-w-[700px]">
+      <table className="w-full text-sm min-w-[800px]">
         <thead>
           <tr className="text-left text-asphalt-600/80 font-mono text-xs uppercase border-b border-asphalt-700">
             <th className="p-4 font-normal">Pseudo Discord</th>
             <th className="p-4 font-normal">Connecté le</th>
-            <th className="p-4 font-normal">Grade à attribuer</th>
+            <th className="p-4 font-normal">Type de compte</th>
             <th className="p-4 font-normal"></th>
           </tr>
         </thead>
@@ -45,23 +53,35 @@ export default function ValidationQueue({ pending, grades }: { pending: Profile[
                 {p.date_entree ? new Date(p.date_entree).toLocaleDateString("fr-FR") : "—"}
               </td>
               <td className="p-4">
-                <select
-                  value={selectedGrade[p.id] ?? ""}
-                  onChange={(e) => setSelectedGrade({ ...selectedGrade, [p.id]: e.target.value })}
-                  className="bg-asphalt-800 border border-asphalt-700 rounded-sm px-2 py-1 text-white text-xs"
-                >
-                  <option value="">Choisir un grade…</option>
-                  {grades.map((g) => (
-                    <option key={g.id} value={g.id}>
-                      {g.nom}
-                    </option>
-                  ))}
-                </select>
+                <div className="flex items-center gap-2 mb-1">
+                  <button
+                    onClick={() => setIsGouv({ ...isGouv, [p.id]: !isGouv[p.id] })}
+                    className={`text-[11px] font-mono px-2 py-1 rounded-sm ${
+                      isGouv[p.id] ? "bg-steel/30 text-steel-light" : "bg-asphalt-700 text-asphalt-600"
+                    }`}
+                  >
+                    {isGouv[p.id] ? "Compte Gouv (externe)" : "Employé du garage"}
+                  </button>
+                </div>
+                {!isGouv[p.id] && (
+                  <select
+                    value={selectedGrade[p.id] ?? ""}
+                    onChange={(e) => setSelectedGrade({ ...selectedGrade, [p.id]: e.target.value })}
+                    className="bg-asphalt-800 border border-asphalt-700 rounded-sm px-2 py-1 text-white text-xs"
+                  >
+                    <option value="">Choisir un grade…</option>
+                    {grades.map((g) => (
+                      <option key={g.id} value={g.id}>
+                        {g.nom}
+                      </option>
+                    ))}
+                  </select>
+                )}
               </td>
               <td className="p-4 flex gap-2">
                 <button
                   onClick={() => approve(p.id)}
-                  disabled={!selectedGrade[p.id]}
+                  disabled={!isGouv[p.id] && !selectedGrade[p.id]}
                   className="flex items-center gap-1 bg-ok/20 hover:bg-ok/30 disabled:opacity-30 text-ok text-xs px-3 py-1.5 rounded-sm"
                 >
                   <Check size={13} /> Valider

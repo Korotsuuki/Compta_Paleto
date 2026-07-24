@@ -24,6 +24,8 @@ create table if not exists registre_historique (
 
 alter table registre_historique enable row level security;
 
+drop policy if exists "lecture_valide" on registre_historique;
+drop policy if exists "ecriture_direction" on registre_historique;
 create policy "lecture_valide" on registre_historique for select using (is_valide());
 create policy "ecriture_direction" on registre_historique for all
   using (is_direction()) with check (is_direction());
@@ -35,6 +37,10 @@ insert into storage.buckets (id, name, public)
 values ('contrats', 'contrats', false)
 on conflict (id) do nothing;
 
+drop policy if exists "lecture_contrats_fichiers" on storage.objects;
+drop policy if exists "ajout_contrats_fichiers" on storage.objects;
+drop policy if exists "maj_contrats_fichiers" on storage.objects;
+drop policy if exists "suppr_contrats_fichiers" on storage.objects;
 create policy "lecture_contrats_fichiers" on storage.objects
   for select using (bucket_id = 'contrats' and is_valide());
 create policy "ajout_contrats_fichiers" on storage.objects

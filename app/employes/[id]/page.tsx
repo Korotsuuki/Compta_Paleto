@@ -46,13 +46,16 @@ export default async function EmployeeDetailPage({ params }: { params: Promise<{
     .select("id, nom, remise_percent")
     .order("nom");
 
-  const canOperate = auth.user?.id === id || me?.role === "direction" || me?.role === "cadre";
+  const gestionLarge = me?.role === "direction" || me?.role === "drh" || me?.role === "gerant";
+  const chefEquipeSurMecano = me?.role === "chef_equipe" && (employee as any)?.est_mecano;
+  const canOperate = auth.user?.id === id || gestionLarge || chefEquipeSurMecano;
 
   return (
     <Shell
       displayName={me ? `${me.prenom ?? ""} ${me.nom ?? ""}`.trim() : undefined}
       gradeNom={(me as any)?.grades?.nom}
       role={me?.role}
+      userId={auth.user?.id}
     >
       <EmployeeTicket
         employee={employee as any}
@@ -66,8 +69,8 @@ export default async function EmployeeDetailPage({ params }: { params: Promise<{
       <div className="mt-6">
         <ContractsPanel
           contracts={(contrats ?? []) as any}
-          canManage={me?.role === "direction" || me?.role === "cadre"}
-          canDelete={me?.role === "direction"}
+          canManage={me?.role === "direction" || me?.role === "drh"}
+          canDelete={me?.role === "direction" || me?.role === "drh"}
           defaultEmployeeId={id}
         />
       </div>

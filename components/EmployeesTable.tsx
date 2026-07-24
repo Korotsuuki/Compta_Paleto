@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { EmployeeFull, Grade, money } from "@/lib/types";
+import { EmployeeFull, Grade, money, roleForGradeName, ROLE_LABELS } from "@/lib/types";
 
 export default function EmployeesTable({
   employees,
@@ -18,8 +18,10 @@ export default function EmployeesTable({
   const [rows, setRows] = useState(employees);
 
   const updateGrade = async (id: string, grade_id: string) => {
-    setRows((r) => r.map((e) => (e.id === id ? { ...e, grade_id } : e)));
-    await supabase.from("profiles").update({ grade_id }).eq("id", id);
+    const grade = grades.find((g) => g.id === grade_id);
+    const role = roleForGradeName(grade?.nom);
+    setRows((r) => r.map((e) => (e.id === id ? { ...e, grade_id, role } : e)));
+    await supabase.from("profiles").update({ grade_id, role }).eq("id", id);
   };
 
   const toggleEtat = async (id: string, etat: "actif" | "absent") => {
@@ -35,6 +37,7 @@ export default function EmployeesTable({
           <tr className="text-left text-asphalt-600/80 font-mono text-xs uppercase border-b border-asphalt-700">
             <th className="p-4 font-normal">Employé</th>
             <th className="p-4 font-normal">Grade</th>
+            <th className="p-4 font-normal">Accès</th>
             <th className="p-4 font-normal">État</th>
             <th className="p-4 font-normal">Téléphone</th>
             <th className="p-4 font-normal">C.A Global</th>
@@ -68,6 +71,9 @@ export default function EmployeesTable({
                 ) : (
                   <span className="text-signal text-xs font-mono">{e.grade_nom ?? "—"}</span>
                 )}
+              </td>
+              <td className="p-4">
+                <span className="text-xs font-mono text-steel-light">{ROLE_LABELS[e.role]}</span>
               </td>
               <td className="p-4">
                 <button

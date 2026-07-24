@@ -28,6 +28,7 @@ export default async function AdminPage() {
       displayName={me ? `${me.prenom ?? ""} ${me.nom ?? ""}`.trim() : undefined}
       gradeNom={(me as any)?.grades?.nom}
       role={me?.role}
+      userId={auth.user?.id}
     >
       <header className="mb-8">
         <div className="stamp text-signal text-xs mb-3">Direction</div>

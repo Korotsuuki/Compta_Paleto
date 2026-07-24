@@ -14,15 +14,20 @@ import {
   Settings,
   FileClock,
   FileText,
+  Landmark,
+  UserCircle,
+  Banknote,
 } from "lucide-react";
+import { Role, ROLE_LABELS } from "@/lib/types";
 
-const NAV = [
+const GESTION_NAV = [
   { href: "/dashboard", label: "Registre global", icon: LayoutDashboard },
   { href: "/employes", label: "Employés", icon: Users },
-  { href: "/partenaires", label: "Partenaires & contrats", icon: Handshake },
+  { href: "/partenaires", label: "Partenaires", icon: Handshake },
   { href: "/contrats", label: "Contrats", icon: FileText },
   { href: "/charges", label: "Charges", icon: Receipt },
   { href: "/primes", label: "Primes", icon: Gift },
+  { href: "/banque", label: "Banque", icon: Landmark },
   { href: "/historique", label: "Historique", icon: FileClock },
 ];
 
@@ -31,11 +36,13 @@ export default function Shell({
   displayName,
   gradeNom,
   role,
+  userId,
 }: {
   children: React.ReactNode;
   displayName?: string;
   gradeNom?: string | null;
-  role?: string;
+  role?: Role;
+  userId?: string;
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -47,7 +54,14 @@ export default function Shell({
     router.refresh();
   };
 
-  const nav = role === "direction" ? [...NAV, { href: "/admin", label: "Administration", icon: Settings }] : NAV;
+  let nav = GESTION_NAV;
+  if (role === "employe") {
+    nav = [{ href: `/employes/${userId}`, label: "Ma fiche", icon: UserCircle }];
+  } else if (role === "gouv") {
+    nav = [{ href: "/gouv", label: "Dépenses totales", icon: Banknote }];
+  } else if (role === "direction") {
+    nav = [...GESTION_NAV, { href: "/admin", label: "Administration", icon: Settings }];
+  }
 
   return (
     <div className="min-h-screen flex bg-asphalt-950 bg-diamond">
@@ -84,7 +98,10 @@ export default function Shell({
 
         <div className="px-5 py-4 border-t border-asphalt-700">
           <div className="text-sm text-white truncate">{displayName ?? "…"}</div>
-          <div className="text-xs font-mono text-signal/80 mb-3">{gradeNom ?? "Sans grade"}</div>
+          <div className="text-xs font-mono text-signal/80 mb-3">
+            {role ? ROLE_LABELS[role] : ""}
+            {gradeNom ? ` · ${gradeNom}` : ""}
+          </div>
           <button
             onClick={signOut}
             className="flex items-center gap-2 text-xs text-asphalt-600 hover:text-bad transition-colors"

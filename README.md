@@ -75,66 +75,80 @@ en se connectant avec Discord.
    Redirects) et dans Supabase (**Authentication → URL Configuration →
    Redirect URLs**), au format `https://ton-site.vercel.app/auth/callback`.
 
-## Structure des rôles
 
-| Rôle        | Accès |
-|-------------|-------|
-| `direction` | Tout voir et modifier (grades, employés, charges, primes, partenaires) |
-| `cadre`     | Facturer pour l'équipe, ajouter des charges/contrats |
-| `employe`   | Voir le registre, facturer sur sa propre fiche |
+## Système de permissions (par grade)
+
+Les droits ne dépendent plus de 3 catégories génériques mais du **grade
+réel** de la personne. Quand la Direction valide un compte (ou change son
+grade depuis la page Employés), le niveau d'accès est déduit automatiquement :
+
+| Grade | Accès |
+|---|---|
+| **Patron / Co-Patron** | Tout, y compris Administration |
+| **DRH** | Accès de base (registre, employés) + création/suppression des **contrats** |
+| **Gérant** | Accès de base + gestion des **partenaires** et des **charges** (ajout/suppression) |
+| **Chef d'équipe** | Accès de base + les fiches de **tous les mécanos** (en plus de la sienne) |
+| **Mécano** (tous niveaux) | **Uniquement sa propre fiche** — aucun accès au reste du site |
+| **Gouv** *(compte externe, à valider via la case "Compte Gouv")* | **Uniquement le total des dépenses**, rien d'autre |
+
+Ces règles sont appliquées **au niveau de la base de données** (RLS), pas
+seulement sur les pages du site — même une requête directe à l'API ne peut
+pas les contourner.
+
+⚠️ **Étape obligatoire** : lance **`sql/migration_04_permissions_banque.sql`**
+dans le SQL Editor Supabase (une seule fois) pour activer tout ça — en plus
+des migrations précédentes si tu ne les avais pas encore lancées :
+`migration_02_historique_contrats.sql`, puis `migration_03_realtime.sql`,
+puis `migration_04_permissions_banque.sql`, dans cet ordre.
+
+Cette dernière migration corrige aussi un bug de sécurité présent depuis le
+début : les vues du registre (`v_employees_full`, `v_dashboard`...)
+contournaient les règles d'accès et laissaient techniquement n'importe quel
+compte validé tout voir. C'est réparé.
 
 ## Ajuster à ton fonctionnement réel
 
-- **Grades et pourcentages** : table `grades` dans Supabase, ou directement
-  depuis le site (Direction uniquement, à venir dans une page dédiée —
-  pour l'instant, modifiable via le Table Editor Supabase).
-- **Prix des prestations** (Déplacement, Chaîne, Réparation...) : table
-  `services`.
+- **Grades et pourcentages** : page **Administration** (Direction), ou
+  directement table `grades` dans Supabase.
+- **Prix des prestations** (Déplacement, Chaîne, Réparation...) : page
+  Administration, ou table `services`.
 - **Formules du registre global** (C.A Répa/Net, Coût réel Customs...) :
-  vue `v_dashboard` dans `sql/schema.sql`. J'ai reconstitué la logique à
-  partir de tes captures d'écran, dis-moi si un calcul ne correspond pas
-  exactement à ta compta actuelle et je l'ajuste.
+  vue `v_dashboard` dans `sql/schema.sql`. Dis-moi si un calcul ne
+  correspond pas exactement à ta compta actuelle et je l'ajuste.
 
-## Nouvelles pages
+## Pages du site
 
-- **Administration** (`/admin`, Direction uniquement) : modifier les grades
-  (salaires fixes ou %), les prestations facturables (prix, catégorie) et
-  les partenaires, directement depuis le site — plus besoin de Supabase au
-  quotidien.
-- **Contrats** (`/contrats`) : upload de vrais fichiers (PDF, image...) liés
-  à un employé ou un partenaire, stockés dans Supabase Storage. Un panneau
-  dédié apparaît aussi directement sur la fiche de chaque employé. Lecture
-  pour tous les comptes validés, ajout pour cadre/direction, suppression
-  pour la Direction.
-- **Historique** (`/historique`) : la Direction peut "clôturer" une période
-  (semaine ou mois) pour garder une photo des totaux du registre à ce
-  moment-là, et comparer dans le temps. Boutons d'export CSV pour les
-  employés, factures et charges (avec filtre par date).
-
-Si tu avais déjà exécuté `sql/schema.sql` avant cette mise à jour, lance en
-plus **`sql/migration_02_historique_contrats.sql`** puis
-**`sql/migration_03_realtime.sql`** dans le SQL Editor Supabase (une seule
-fois chacun) — le premier ajoute l'historique et le stockage des contrats,
-le second **active le temps réel** (sans lui, les compteurs ne
-s'actualisent pas en direct entre plusieurs utilisateurs, même si le code
-du site est correct).
+- **Registre global** (`/dashboard`) : C.A, charges, bénéfice net.
+- **Employés** (`/employes`) : liste, validation des nouveaux comptes,
+  changement de grade.
+- **Partenaires** (`/partenaires`) : remises et avantages, éditable par
+  Direction/Gérant.
+- **Contrats** (`/contrats`) : upload de vrais fichiers liés à un employé
+  ou un partenaire (Supabase Storage), éditable par Direction/DRH. Chacun
+  voit aussi son propre contrat directement sur sa fiche.
+- **Charges** (`/charges`) : ajout et suppression, réservés à
+  Direction/Gérant.
+- **Primes** (`/primes`) : suivi de l'enveloppe hebdomadaire.
+- **Banque** (`/banque`) : solde de l'entreprise, dépôts/retraits (ajout
+  réservé à la Direction).
+- **Historique** (`/historique`) : clôtures de période + exports CSV.
+- **Administration** (`/admin`, Direction uniquement) : grades, prestations
+  facturables, partenaires.
+- **Dépenses totales** (`/gouv`) : page minimaliste pour les comptes
+  externes (LSPD, Gouvernement...), un seul chiffre.
 
 ## Facturation "Montant Custom"
 
 Le formulaire reprend la logique de ton ancien tableur : **prix du panier
 Customs → % de remise → prix à facturer**, calculé automatiquement. La
-remise peut venir d'un partenaire sous contrat (menu déroulant, alimenté
-par la remise enregistrée sur la page Partenaires/Admin) ou être saisie
-librement pour une promo ponctuelle. C'est ce montant final, déjà remisé,
-qui est enregistré comme facture.
+remise peut venir d'un partenaire sous contrat (menu déroulant) ou être
+saisie librement pour une promo ponctuelle. C'est ce montant final, déjà
+remisé, qui est enregistré comme facture.
 
-Chaque ligne de l'historique de facturation (sur la fiche employé) a
-maintenant un bouton de suppression individuel — utile si un employé s'est
-trompé et doit refaire une facture, sans devoir annuler tout ce qui a été
-saisi après.
+Chaque ligne de l'historique de facturation (sur la fiche employé) a un
+bouton de suppression individuel — utile si un employé s'est trompé et doit
+refaire une facture.
 
 ## Ce qui reste à affiner avec toi
 
-Dis-moi ce qui doit être précisé ou ajouté en priorité — par exemple des
-graphiques d'évolution sur la page Historique, ou une vue "par employé" des
-contrats sur la page Contrats.
+Dis-moi ce qui doit être précisé ou ajouté en priorité.
