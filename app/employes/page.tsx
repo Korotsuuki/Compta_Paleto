@@ -49,12 +49,9 @@ export default async function EmployesPage() {
         </p>
       </header>
 
-      {canEdit && (pending?.length ?? 0) > 0 && (
+      {canEdit && (
         <div className="mb-8">
-          <h2 className="font-display uppercase text-caution text-sm mb-3 tracking-wide">
-            Comptes en attente de validation ({pending!.length})
-          </h2>
-          <ValidationQueue pending={pending as any} grades={(grades ?? []) as Grade[]} />
+          <ValidationQueue pending={(pending ?? []) as any} grades={(grades ?? []) as Grade[]} />
         </div>
       )}
 

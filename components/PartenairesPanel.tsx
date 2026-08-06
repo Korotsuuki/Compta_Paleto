@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Partenaire } from "@/lib/types";
 import { Plus, Trash2, Save, Check, X } from "lucide-react";
@@ -9,6 +9,30 @@ export default function PartenairesPanel({ initial }: { initial: Partenaire[] })
   const supabase = createClient();
   const [rows, setRows] = useState<Partenaire[]>(initial);
   const [draft, setDraft] = useState<Partial<Partenaire>>({ categorie: "Garages" });
+
+  // Synchro ciblée ligne par ligne : ne touche que la ligne concernée, pour
+  // ne jamais écraser une saisie en cours ailleurs dans le tableau.
+  useEffect(() => {
+    const channel = supabase
+      .channel("partenaires-edit-live")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "partenaires" }, (payload) => {
+        const p = payload.new as Partenaire;
+        setRows((r) => (r.some((x) => x.id === p.id) ? r : [...r, p]));
+      })
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "partenaires" }, (payload) => {
+        const p = payload.new as Partenaire;
+        setRows((r) => r.map((x) => (x.id === p.id ? p : x)));
+      })
+      .on("postgres_changes", { event: "DELETE", schema: "public", table: "partenaires" }, (payload) => {
+        const id = (payload.old as Partenaire).id;
+        setRows((r) => r.filter((x) => x.id !== id));
+      })
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const patch = (id: string, field: keyof Partenaire, value: any) =>
     setRows((r) => r.map((p) => (p.id === id ? { ...p, [field]: value } : p)));

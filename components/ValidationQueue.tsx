@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Grade, Profile, roleForGradeName } from "@/lib/types";
 import { Check, X } from "lucide-react";
@@ -10,6 +10,30 @@ export default function ValidationQueue({ pending, grades }: { pending: Profile[
   const [rows, setRows] = useState(pending);
   const [selectedGrade, setSelectedGrade] = useState<Record<string, string>>({});
   const [isGouv, setIsGouv] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    const channel = supabase
+      .channel("validation-queue-live")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "profiles" }, (payload) => {
+        const p = payload.new as Profile;
+        if (!p.valide) setRows((r) => (r.some((x) => x.id === p.id) ? r : [...r, p]));
+      })
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "profiles" }, (payload) => {
+        const p = payload.new as Profile;
+        // Un autre membre de la Direction vient de valider/refuser ce compte
+        // ailleurs : on le retire de la file ici aussi.
+        if (p.valide) setRows((r) => r.filter((x) => x.id !== p.id));
+      })
+      .on("postgres_changes", { event: "DELETE", schema: "public", table: "profiles" }, (payload) => {
+        const id = (payload.old as Profile).id;
+        setRows((r) => r.filter((x) => x.id !== id));
+      })
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const approve = async (id: string) => {
     if (isGouv[id]) {
@@ -35,7 +59,11 @@ export default function ValidationQueue({ pending, grades }: { pending: Profile[
   if (rows.length === 0) return null;
 
   return (
-    <div className="ticket overflow-x-auto border-caution/40">
+    <div>
+      <h2 className="font-display uppercase text-caution text-sm mb-3 tracking-wide">
+        Comptes en attente de validation ({rows.length})
+      </h2>
+      <div className="ticket overflow-x-auto border-caution/40">
       <table className="w-full text-sm min-w-[800px]">
         <thead>
           <tr className="text-left text-asphalt-600/80 font-mono text-xs uppercase border-b border-asphalt-700">
@@ -97,6 +125,7 @@ export default function ValidationQueue({ pending, grades }: { pending: Profile[
           ))}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }
