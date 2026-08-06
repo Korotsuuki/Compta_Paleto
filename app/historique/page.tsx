@@ -22,15 +22,10 @@ export default async function HistoriquePage() {
     .select("*")
     .order("periode_debut", { ascending: false });
 
-  const { data: dashRows } = await supabase.from("v_dashboard").select("*").single();
-  const dash = dashRows as Dashboard | null;
+  const { data: statsRows } = await supabase.rpc("get_dashboard_stats");
+  const dash = (statsRows?.[0] as Dashboard) ?? null;
 
-  const totalCharges =
-    (dash?.total_kits_nourriture ?? 0) +
-    (dash?.total_matieres_premieres ?? 0) +
-    (dash?.total_publicite ?? 0) +
-    (dash?.total_impots ?? 0) +
-    (dash?.total_autres_charges ?? 0);
+  const totalCharges = (dash?.total_charges ?? 0) + (dash?.total_impots ?? 0);
 
   return (
     <Shell

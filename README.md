@@ -99,7 +99,69 @@ pas les contourner.
 dans le SQL Editor Supabase (une seule fois) pour activer tout ça — en plus
 des migrations précédentes si tu ne les avais pas encore lancées :
 `migration_02_historique_contrats.sql`, puis `migration_03_realtime.sql`,
-puis `migration_04_permissions_banque.sql`, dans cet ordre.
+puis `migration_04_permissions_banque.sql`, puis
+`migration_05_security_hardening.sql`, puis `migration_06_acces_avances.sql`,
+dans cet ordre.
+
+## Mise à jour : accès élargis, transfert, primes auto, logs
+
+**Permissions**
+- **Mécano** : voit maintenant aussi le Registre global et les Partenaires
+  (lecture seule), en plus de sa fiche.
+- **Chef d'équipe** : voit tout le monde dans la liste Employés, mais ne
+  peut ouvrir que sa propre fiche et celles des Mécanos (stagiaire,
+  mécano, confirmé).
+
+**Transfert de facture** : sur la fiche employé, chaque ligne de
+l'historique a un bouton ⇄ pour transférer cette facture à quelqu'un
+d'autre (utile si deux employés se partagent un même client).
+
+**Primes automatiques** : la page Primes affiche désormais tout seule les
+dimanches du mois en cours (75 000$, 175 000$ le dernier), sans jamais
+avoir besoin de créer une ligne à la main. La Direction peut éditer le
+montant versé pour chaque semaine.
+
+**Registre global** :
+- Case "Charges" = somme de Kits/Nourriture + Matières premières +
+  Publicité + Autre, mise à jour automatiquement.
+- Les Impôts sont sortis de cette case (affichés à part), mais restent
+  déduits du bénéfice net.
+- Le salaire d'un employé **absent** n'est plus compté dans le bénéfice
+  net (ni dans le total des dépenses affiché à la page Gouv).
+- Nouvelle case "Prime prévue cette semaine".
+- Top 3 C.A Global, visible par la Direction.
+
+**Logs** (`/logs`, Direction uniquement) : historique en direct de toutes
+les créations/modifications/suppressions sur le site (fiches, factures,
+charges, primes, partenaires, contrats, banque...), avec le nom de la
+personne responsable.
+
+**Responsive** : le menu latéral devient un menu mobile (☰) sur petit
+écran.
+
+**Temps réel étendu** : Registre global, Employés, Charges, Partenaires,
+Primes, Banque et Logs se mettent maintenant à jour en direct pour tout le
+monde connecté, comme c'était déjà le cas sur la fiche employé.
+
+### Un point à vérifier avec toi
+
+Dans l'onglet Charges, j'ai retiré "Impôts" de la liste des catégories
+qu'on peut choisir en ajoutant une charge (ta demande), mais je n'ai pas
+supprimé la catégorie elle-même — les impôts déjà enregistrés restent
+visibles et continuent d'être déduits du bénéfice net. Dis-moi si tu
+veux gérer les impôts autrement (une page dédiée, par exemple).
+
+`migration_05` corrige des avertissements du "linter" de sécurité intégré
+à Supabase (Database → Advisors) : le `search_path` des fonctions n'était
+pas figé, et certaines fonctions internes étaient inutilement exposées en
+API publique. Aucun impact sur le fonctionnement du site, c'est du
+durcissement pur.
+
+Un dernier point signalé par ce linter n'est pas un fichier SQL mais un
+réglage à activer toi-même dans Supabase : **Authentication → Sign In /
+Providers → Password → active "Leaked password protection"**. On ne s'en
+sert pas directement (connexion Discord uniquement), mais c'est gratuit et
+recommandé de le laisser activé.
 
 Cette dernière migration corrige aussi un bug de sécurité présent depuis le
 début : les vues du registre (`v_employees_full`, `v_dashboard`...)

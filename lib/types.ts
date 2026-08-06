@@ -98,13 +98,35 @@ export interface Dashboard {
   ca_repa_net: number;
   cout_customs: number;
   total_salaires: number;
-  total_kits_nourriture: number;
-  total_matieres_premieres: number;
+  total_charges: number;
   total_impots: number;
-  total_publicite: number;
-  total_autres_charges: number;
   total_primes: number;
   total_employes: number;
+  prime_semaine_courante: number;
+}
+
+export interface PrimeSemaine {
+  date_debut: string;
+  montant_max: number;
+  montant_verse: number;
+  semaine_numero: number;
+}
+
+export interface AuditLogEntry {
+  id: number;
+  table_name: string;
+  record_id: string | null;
+  action: "INSERT" | "UPDATE" | "DELETE";
+  acted_by: string | null;
+  old_data: Record<string, any> | null;
+  new_data: Record<string, any> | null;
+  created_at: string;
+}
+
+export interface TransferTarget {
+  id: string;
+  prenom: string | null;
+  nom: string | null;
 }
 
 export interface Contrat {

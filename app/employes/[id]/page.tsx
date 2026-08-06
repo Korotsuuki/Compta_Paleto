@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import Shell from "@/components/Shell";
 import EmployeeTicket from "@/components/EmployeeTicket";
 import ContractsPanel from "@/components/ContractsPanel";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 export default async function EmployeeDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -22,6 +22,14 @@ export default async function EmployeeDetailPage({ params }: { params: Promise<{
     .single();
 
   if (!employee) notFound();
+
+  const isOwner = auth.user?.id === id;
+
+  // Le Chef d'équipe voit tout le monde dans la liste, mais ne peut ouvrir
+  // que sa propre fiche ou celle d'un Mécano (stagiaire/confirmé/mécano).
+  if (me?.role === "chef_equipe" && !isOwner && !(employee as any)?.est_mecano) {
+    redirect("/employes");
+  }
 
   const { data: services } = await supabase
     .from("services")
@@ -46,9 +54,11 @@ export default async function EmployeeDetailPage({ params }: { params: Promise<{
     .select("id, nom, remise_percent")
     .order("nom");
 
+  const { data: transferTargets } = await supabase.rpc("list_employees_for_transfer");
+
   const gestionLarge = me?.role === "direction" || me?.role === "drh" || me?.role === "gerant";
   const chefEquipeSurMecano = me?.role === "chef_equipe" && (employee as any)?.est_mecano;
-  const canOperate = auth.user?.id === id || gestionLarge || chefEquipeSurMecano;
+  const canOperate = isOwner || gestionLarge || chefEquipeSurMecano;
 
   return (
     <Shell
@@ -62,9 +72,10 @@ export default async function EmployeeDetailPage({ params }: { params: Promise<{
         services={(services ?? []) as any}
         initialFactures={(factures ?? []) as any}
         partenaires={(partenaires ?? []) as any}
+        transferTargets={(transferTargets ?? []) as any}
         canOperate={!!canOperate}
         canManageProfile={me?.role === "direction"}
-        isOwner={auth.user?.id === id}
+        isOwner={isOwner}
       />
       <div className="mt-6">
         <ContractsPanel

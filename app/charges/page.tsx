@@ -39,11 +39,16 @@ export default async function ChargesPage() {
         <div className="stamp text-signal text-xs mb-3">Dépenses</div>
         <h1 className="font-display text-3xl uppercase text-white">Charges</h1>
         <p className="text-asphalt-600/80 font-mono text-sm mt-1">
-          Achats, prestataires et impôts imputés au registre
+          Achats et prestataires imputés au registre — les impôts sont suivis à part
         </p>
       </header>
 
-      <ChargesTable charges={(charges ?? []) as any} labels={LABELS} canEdit={!!canEdit} />
+      <ChargesTable
+        charges={(charges ?? []) as any}
+        labels={LABELS}
+        addableCategories={["kits_nourriture", "matieres_premieres", "publicite", "autre"]}
+        canEdit={!!canEdit}
+      />
     </Shell>
   );
 }

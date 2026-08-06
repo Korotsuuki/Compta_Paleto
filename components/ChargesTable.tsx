@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Charge, ChargeCategorie, money } from "@/lib/types";
 import { Plus, Trash2 } from "lucide-react";
@@ -8,21 +8,38 @@ import { Plus, Trash2 } from "lucide-react";
 export default function ChargesTable({
   charges,
   labels,
+  addableCategories,
   canEdit,
 }: {
   charges: Charge[];
   labels: Record<string, string>;
+  addableCategories?: ChargeCategorie[];
   canEdit: boolean;
 }) {
   const supabase = createClient();
   const [rows, setRows] = useState(charges);
+  const options = addableCategories ?? (Object.keys(labels) as ChargeCategorie[]);
   const [form, setForm] = useState({
-    categorie: "autre" as ChargeCategorie,
+    categorie: options[0] ?? ("autre" as ChargeCategorie),
     prestataire: "",
     article: "",
     montant: "",
     quantite: "1",
   });
+
+  useEffect(() => {
+    const channel = supabase
+      .channel("charges-live")
+      .on("postgres_changes", { event: "*", schema: "public", table: "charges" }, async () => {
+        const { data } = await supabase.from("charges").select("*").order("date", { ascending: false });
+        if (data) setRows(data as Charge[]);
+      })
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const submit = async () => {
     const montant = parseFloat(form.montant.replace(",", "."));
@@ -40,7 +57,7 @@ export default function ChargesTable({
       .select()
       .single();
     if (data) setRows((r) => [data as Charge, ...r]);
-    setForm({ categorie: "autre", prestataire: "", article: "", montant: "", quantite: "1" });
+    setForm({ categorie: options[0] ?? ("autre" as ChargeCategorie), prestataire: "", article: "", montant: "", quantite: "1" });
   };
 
   const deleteCharge = async (id: string) => {
@@ -60,9 +77,9 @@ export default function ChargesTable({
               onChange={(e) => setForm({ ...form, categorie: e.target.value as ChargeCategorie })}
               className="bg-asphalt-800 border border-asphalt-700 rounded-sm px-2 py-2 text-white text-sm"
             >
-              {Object.entries(labels).map(([k, v]) => (
+              {options.map((k) => (
                 <option key={k} value={k}>
-                  {v}
+                  {labels[k]}
                 </option>
               ))}
             </select>

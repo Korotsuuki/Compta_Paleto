@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { EmployeeFull, Grade, money, roleForGradeName, ROLE_LABELS } from "@/lib/types";
 
@@ -16,6 +16,24 @@ export default function EmployeesTable({
 }) {
   const supabase = createClient();
   const [rows, setRows] = useState(employees);
+
+  useEffect(() => {
+    const channel = supabase
+      .channel("employees-live")
+      .on("postgres_changes", { event: "*", schema: "public", table: "profiles" }, async () => {
+        const { data } = await supabase.from("v_employees_full").select("*").eq("valide", true).order("prenom");
+        if (data) setRows(data as EmployeeFull[]);
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "factures" }, async () => {
+        const { data } = await supabase.from("v_employees_full").select("*").eq("valide", true).order("prenom");
+        if (data) setRows(data as EmployeeFull[]);
+      })
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const updateGrade = async (id: string, grade_id: string) => {
     const grade = grades.find((g) => g.id === grade_id);

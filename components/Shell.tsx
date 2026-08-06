@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import {
   LayoutDashboard,
@@ -17,6 +18,9 @@ import {
   Landmark,
   UserCircle,
   Banknote,
+  ScrollText,
+  Menu,
+  X,
 } from "lucide-react";
 import { Role, ROLE_LABELS } from "@/lib/types";
 
@@ -29,6 +33,11 @@ const GESTION_NAV = [
   { href: "/primes", label: "Primes", icon: Gift },
   { href: "/banque", label: "Banque", icon: Landmark },
   { href: "/historique", label: "Historique", icon: FileClock },
+];
+
+const EMPLOYE_NAV = [
+  { href: "/dashboard", label: "Registre global", icon: LayoutDashboard },
+  { href: "/partenaires", label: "Partenaires", icon: Handshake },
 ];
 
 export default function Shell({
@@ -47,6 +56,7 @@ export default function Shell({
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createClient();
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   const signOut = async () => {
     await supabase.auth.signOut();
@@ -54,19 +64,25 @@ export default function Shell({
     router.refresh();
   };
 
-  let nav = GESTION_NAV;
+  let nav: typeof GESTION_NAV = [];
   if (role === "employe") {
-    nav = [{ href: `/employes/${userId}`, label: "Ma fiche", icon: UserCircle }];
+    nav = [...EMPLOYE_NAV, { href: `/employes/${userId}`, label: "Ma fiche", icon: UserCircle }];
   } else if (role === "gouv") {
     nav = [{ href: "/gouv", label: "Dépenses totales", icon: Banknote }];
   } else if (role === "direction") {
-    nav = [...GESTION_NAV, { href: "/admin", label: "Administration", icon: Settings }];
+    nav = [
+      ...GESTION_NAV,
+      { href: "/logs", label: "Logs", icon: ScrollText },
+      { href: "/admin", label: "Administration", icon: Settings },
+    ];
+  } else {
+    nav = GESTION_NAV;
   }
 
-  return (
-    <div className="min-h-screen flex bg-asphalt-950 bg-diamond">
-      <aside className="w-64 shrink-0 border-r border-asphalt-700 flex flex-col">
-        <div className="px-5 py-6 border-b border-asphalt-700 flex items-center gap-2 text-signal">
+  const sidebarContent = (
+    <>
+      <div className="px-5 py-6 border-b border-asphalt-700 flex items-center justify-between">
+        <div className="flex items-center gap-2 text-signal">
           <Wrench size={20} strokeWidth={2.5} />
           <div>
             <div className="font-display uppercase tracking-wider text-white text-lg leading-none">
@@ -75,43 +91,78 @@ export default function Shell({
             <div className="font-mono text-[10px] text-asphalt-600/70 mt-1">registre interne</div>
           </div>
         </div>
+        <button
+          onClick={() => setMobileOpen(false)}
+          className="md:hidden text-asphalt-600 hover:text-white"
+        >
+          <X size={20} />
+        </button>
+      </div>
 
-        <nav className="flex-1 py-4 overflow-y-auto">
-          {nav.map(({ href, label, icon: Icon }) => {
-            const active = pathname.startsWith(href);
-            return (
-              <Link
-                key={href}
-                href={href}
-                className={`flex items-center gap-3 px-5 py-3 text-sm font-medium border-l-2 transition-colors ${
-                  active
-                    ? "border-signal text-white bg-asphalt-900"
-                    : "border-transparent text-asphalt-600 hover:text-white hover:bg-asphalt-900/60"
-                }`}
-              >
-                <Icon size={17} />
-                {label}
-              </Link>
-            );
-          })}
-        </nav>
+      <nav className="flex-1 py-4 overflow-y-auto">
+        {nav.map(({ href, label, icon: Icon }) => {
+          const active = pathname.startsWith(href);
+          return (
+            <Link
+              key={href}
+              href={href}
+              onClick={() => setMobileOpen(false)}
+              className={`flex items-center gap-3 px-5 py-3 text-sm font-medium border-l-2 transition-colors ${
+                active
+                  ? "border-signal text-white bg-asphalt-900"
+                  : "border-transparent text-asphalt-600 hover:text-white hover:bg-asphalt-900/60"
+              }`}
+            >
+              <Icon size={17} />
+              {label}
+            </Link>
+          );
+        })}
+      </nav>
 
-        <div className="px-5 py-4 border-t border-asphalt-700">
-          <div className="text-sm text-white truncate">{displayName ?? "…"}</div>
-          <div className="text-xs font-mono text-signal/80 mb-3">
-            {role ? ROLE_LABELS[role] : ""}
-            {gradeNom ? ` · ${gradeNom}` : ""}
-          </div>
-          <button
-            onClick={signOut}
-            className="flex items-center gap-2 text-xs text-asphalt-600 hover:text-bad transition-colors"
-          >
-            <LogOut size={14} /> Déconnexion
-          </button>
+      <div className="px-5 py-4 border-t border-asphalt-700">
+        <div className="text-sm text-white truncate">{displayName ?? "…"}</div>
+        <div className="text-xs font-mono text-signal/80 mb-3">
+          {role ? ROLE_LABELS[role] : ""}
+          {gradeNom ? ` · ${gradeNom}` : ""}
         </div>
+        <button
+          onClick={signOut}
+          className="flex items-center gap-2 text-xs text-asphalt-600 hover:text-bad transition-colors"
+        >
+          <LogOut size={14} /> Déconnexion
+        </button>
+      </div>
+    </>
+  );
+
+  return (
+    <div className="min-h-screen flex bg-asphalt-950 bg-diamond">
+      {/* Mobile top bar */}
+      <div className="md:hidden fixed top-0 left-0 right-0 z-30 flex items-center justify-between px-4 py-3 bg-asphalt-900 border-b border-asphalt-700">
+        <div className="flex items-center gap-2 text-signal">
+          <Wrench size={18} strokeWidth={2.5} />
+          <span className="font-display uppercase tracking-wider text-white text-sm">Paleto Garage</span>
+        </div>
+        <button onClick={() => setMobileOpen(true)} className="text-white">
+          <Menu size={22} />
+        </button>
+      </div>
+
+      {/* Mobile off-canvas sidebar */}
+      {mobileOpen && (
+        <div className="md:hidden fixed inset-0 z-40 flex">
+          <div className="w-64 bg-asphalt-950 border-r border-asphalt-700 flex flex-col">{sidebarContent}</div>
+          <div className="flex-1 bg-black/60" onClick={() => setMobileOpen(false)} />
+        </div>
+      )}
+
+      {/* Desktop sidebar */}
+      <aside className="hidden md:flex w-64 shrink-0 border-r border-asphalt-700 flex-col">
+        {sidebarContent}
       </aside>
 
-      <main className="flex-1 p-8 overflow-y-auto">{children}</main>
+      <main className="flex-1 p-4 md:p-8 pt-20 md:pt-8 overflow-y-auto overflow-x-hidden">{children}</main>
     </div>
   );
 }

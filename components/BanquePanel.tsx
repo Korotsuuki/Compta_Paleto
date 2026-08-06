@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { BanqueMouvement, money } from "@/lib/types";
 import StatCard from "@/components/StatCard";
@@ -24,6 +24,25 @@ export default function BanquePanel({
     const { data } = await supabase.from("v_banque_solde").select("solde").single();
     if (data) setCurrentSolde(data.solde);
   };
+
+  useEffect(() => {
+    const channel = supabase
+      .channel("banque-live")
+      .on("postgres_changes", { event: "*", schema: "public", table: "banque_mouvements" }, async () => {
+        const { data } = await supabase
+          .from("banque_mouvements")
+          .select("*")
+          .order("date", { ascending: false })
+          .order("created_at", { ascending: false });
+        if (data) setRows(data as BanqueMouvement[]);
+        await refreshSolde();
+      })
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const submit = async () => {
     const montant = parseFloat(form.montant.replace(",", "."));

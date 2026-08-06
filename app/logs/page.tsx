@@ -1,9 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Shell from "@/components/Shell";
-import PrimesPanel from "@/components/PrimesPanel";
+import LogsPanel from "@/components/LogsPanel";
 
-export default async function PrimesPage() {
+export default async function LogsPage() {
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getUser();
 
@@ -13,10 +13,13 @@ export default async function PrimesPage() {
     .eq("id", auth.user?.id)
     .single();
 
-  if (me?.role === "employe") redirect(`/employes/${auth.user?.id}`);
-  if (me?.role === "gouv") redirect("/gouv");
+  if (me?.role !== "direction") redirect("/dashboard");
 
-  const { data: primes } = await supabase.rpc("get_primes_mois_courant");
+  const { data: logs } = await supabase
+    .from("audit_log")
+    .select("*, profiles:acted_by(prenom, nom)")
+    .order("created_at", { ascending: false })
+    .limit(200);
 
   return (
     <Shell
@@ -26,15 +29,14 @@ export default async function PrimesPage() {
       userId={auth.user?.id}
     >
       <header className="mb-8">
-        <div className="stamp text-signal text-xs mb-3">Enveloppe hebdomadaire</div>
-        <h1 className="font-display text-3xl uppercase text-white">Primes</h1>
+        <div className="stamp text-signal text-xs mb-3">Direction</div>
+        <h1 className="font-display text-3xl uppercase text-white">Logs</h1>
         <p className="text-asphalt-600/80 font-mono text-sm mt-1">
-          Un dimanche par semaine du mois en cours, généré automatiquement — 75 000$, et 175 000$
-          la dernière semaine du mois
+          Historique en direct de toutes les modifications sur le site
         </p>
       </header>
 
-      <PrimesPanel initial={(primes ?? []) as any} canEdit={me?.role === "direction"} />
+      <LogsPanel initial={(logs ?? []) as any} />
     </Shell>
   );
 }

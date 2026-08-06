@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { EmployeeFull, Facture, Service, Partenaire, money } from "@/lib/types";
-import { Minus, Plus, Trash2, Percent, Pencil, Save, X } from "lucide-react";
+import { EmployeeFull, Facture, Service, Partenaire, TransferTarget, money } from "@/lib/types";
+import { Minus, Plus, Trash2, Percent, Pencil, Save, X, ArrowRightLeft } from "lucide-react";
 
 const CATEGORY_LABELS: Record<string, string> = {
   depannage: "Dépannages",
@@ -19,6 +19,7 @@ export default function EmployeeTicket({
   services,
   initialFactures,
   partenaires,
+  transferTargets,
   canOperate,
   canManageProfile,
   isOwner,
@@ -27,6 +28,7 @@ export default function EmployeeTicket({
   services: Service[];
   initialFactures: Facture[];
   partenaires: PartenaireLite[];
+  transferTargets: TransferTarget[];
   canOperate: boolean;
   canManageProfile: boolean;
   isOwner: boolean;
@@ -130,6 +132,23 @@ export default function EmployeeTicket({
     if (!canOperate) return;
     const last = factures.find((f) => f.service_id === serviceId);
     if (last) await deleteFacture(last.id);
+  };
+
+  const [transferringId, setTransferringId] = useState<string | null>(null);
+  const [transferTarget, setTransferTarget] = useState("");
+  const [transferring, setTransferring] = useState(false);
+
+  const confirmTransfer = async () => {
+    if (!transferringId || !transferTarget) return;
+    setTransferring(true);
+    const { error } = await supabase.rpc("transfer_facture", {
+      p_facture_id: transferringId,
+      p_new_employee_id: transferTarget,
+    });
+    if (!error) await refreshAll();
+    setTransferringId(null);
+    setTransferTarget("");
+    setTransferring(false);
   };
 
   const panier = parseFloat(panierAmount.replace(",", ".")) || 0;
@@ -387,25 +406,70 @@ export default function EmployeeTicket({
           <table className="w-full text-xs font-mono">
             <tbody>
               {factures.slice(0, 30).map((f) => (
-                <tr key={f.id} className="border-b border-asphalt-800 text-asphalt-600">
-                  <td className="py-1.5">{new Date(f.created_at).toLocaleString("fr-FR")}</td>
-                  <td className="py-1.5">{services.find((s) => s.id === f.service_id)?.nom ?? "—"}</td>
-                  <td className="py-1.5 text-right text-white">{money(f.montant)}</td>
-                  <td className="py-1.5 pl-3 text-right">
-                    {canOperate && (
-                      <button
-                        onClick={() => {
-                          if (confirm("Supprimer cette facture ? L'employé pourra la refaire correctement."))
-                            deleteFacture(f.id);
-                        }}
-                        className="p-1 text-bad/70 hover:text-bad"
-                        title="Supprimer cette facture"
-                      >
-                        <Trash2 size={13} />
-                      </button>
-                    )}
-                  </td>
-                </tr>
+                <Fragment key={f.id}>
+                  <tr className="border-b border-asphalt-800 text-asphalt-600">
+                    <td className="py-1.5">{new Date(f.created_at).toLocaleString("fr-FR")}</td>
+                    <td className="py-1.5">{services.find((s) => s.id === f.service_id)?.nom ?? "—"}</td>
+                    <td className="py-1.5 text-right text-white">{money(f.montant)}</td>
+                    <td className="py-1.5 pl-3 text-right whitespace-nowrap">
+                      {canOperate && (
+                        <>
+                          <button
+                            onClick={() => setTransferringId(transferringId === f.id ? null : f.id)}
+                            className="p-1 text-steel-light/70 hover:text-steel-light mr-1"
+                            title="Transférer cette facture à quelqu'un d'autre"
+                          >
+                            <ArrowRightLeft size={13} />
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (confirm("Supprimer cette facture ? L'employé pourra la refaire correctement."))
+                                deleteFacture(f.id);
+                            }}
+                            className="p-1 text-bad/70 hover:text-bad"
+                            title="Supprimer cette facture"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </>
+                      )}
+                    </td>
+                  </tr>
+                  {transferringId === f.id && (
+                    <tr className="border-b border-asphalt-800">
+                      <td colSpan={4} className="py-2">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-asphalt-600/70">Transférer à :</span>
+                          <select
+                            value={transferTarget}
+                            onChange={(e) => setTransferTarget(e.target.value)}
+                            className="bg-asphalt-800 border border-asphalt-700 rounded-sm px-2 py-1 text-white text-xs"
+                          >
+                            <option value="">Choisir un employé…</option>
+                            {transferTargets.map((t) => (
+                              <option key={t.id} value={t.id}>
+                                {t.prenom} {t.nom}
+                              </option>
+                            ))}
+                          </select>
+                          <button
+                            onClick={confirmTransfer}
+                            disabled={!transferTarget || transferring}
+                            className="bg-steel/30 hover:bg-steel/40 disabled:opacity-30 text-steel-light px-2 py-1 rounded-sm"
+                          >
+                            Confirmer
+                          </button>
+                          <button
+                            onClick={() => setTransferringId(null)}
+                            className="text-asphalt-600 hover:text-white px-2 py-1"
+                          >
+                            Annuler
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </Fragment>
               ))}
               {factures.length === 0 && (
                 <tr>
