@@ -78,7 +78,7 @@ export default function DashboardLive({
       <section className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <StatCard label="C.A Global" value={money(stats?.ca_global)} tone="signal" size="lg" />
         <StatCard label="C.A Répa / Net." value={money(stats?.ca_repa_net)} />
-        <StatCard label="Coût réel Customs" value={money(stats?.cout_customs)} tone="steel" />
+        <StatCard label="Coût réel Customs/Perf" value={money(stats?.cout_customs)} tone="steel" />
         <StatCard
           label="Bénéfice net"
           value={money(beneficeNet)}
@@ -91,6 +91,7 @@ export default function DashboardLive({
         <StatCard label="Total à payer employés" value={money(stats?.total_salaires)} />
         <StatCard label="Charges" value={money(stats?.total_charges)} />
         <StatCard label="Impôts" value={money(stats?.total_impots)} />
+        <StatCard label="Coût entreprise" value={money(stats?.cout_entreprise)} tone="steel" />
         <StatCard label="Prime prévue cette semaine" value={money(stats?.prime_semaine_courante)} tone="steel" size="lg" />
       </section>
 

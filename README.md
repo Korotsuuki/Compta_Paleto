@@ -101,7 +101,23 @@ des migrations précédentes si tu ne les avais pas encore lancées :
 `migration_02_historique_contrats.sql`, puis `migration_03_realtime.sql`,
 puis `migration_04_permissions_banque.sql`, puis
 `migration_05_security_hardening.sql`, puis `migration_06_acces_avances.sql`,
-puis `migration_07_correctifs_registre.sql`, dans cet ordre.
+puis `migration_07_correctifs_registre.sql`, puis
+`migration_08_impots_customs.sql`, dans cet ordre.
+
+## Impôts automatiques + Coût réel Customs/Perf
+
+- **Impôts** : calculés automatiquement selon ta grille de tranches
+  (10/20/30/40% par palier sur C.A Global − Salaires − Kits/Nourriture −
+  Matières premières − Prime de la semaine), avec l'abattement -25% du
+  partenaire Gouvernement déjà appliqué. Plus besoin de rien saisir à la
+  main, ni dans l'onglet Charges ni ailleurs.
+- **Coût réel Customs/Perf** : nouvelle case sur le registre global,
+  somme des prix "panier" des factures Custom **avant** remise partenaire.
+- **Coût entreprise** : Coût réel Customs/Perf ÷ 2, calculé automatiquement.
+- Les factures Custom gardent maintenant en mémoire le prix brut du
+  panier en plus du montant final facturé (remisé) — nécessaire pour ce
+  calcul. Les factures créées avant cette mise à jour n'ont que le
+  montant final (léger écart uniquement sur l'historique déjà existant).
 
 ## Correctifs registre global / primes / tri employés
 

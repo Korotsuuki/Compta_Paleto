@@ -170,6 +170,7 @@ export default function EmployeeTicket({
       employee_id: employee.id,
       service_id: custom.id,
       montant: Math.round(prixAFacturer * 100) / 100,
+      montant_brut: Math.round(panier * 100) / 100,
       quantite: 1,
     });
     setPanierAmount("");

@@ -60,6 +60,7 @@ export interface Facture {
   employee_id: string;
   service_id: string | null;
   montant: number;
+  montant_brut: number | null;
   quantite: number;
   client_identite: string | null;
   client_telephone: string | null;
@@ -99,6 +100,7 @@ export interface Dashboard {
   ca_global: number;
   ca_repa_net: number;
   cout_customs: number;
+  cout_entreprise: number;
   total_salaires: number;
   total_charges: number;
   total_impots: number;
