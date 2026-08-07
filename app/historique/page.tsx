@@ -50,7 +50,7 @@ export default async function HistoriquePage() {
           cout_customs: dash?.cout_customs ?? 0,
           total_salaires: dash?.total_salaires ?? 0,
           total_charges: totalCharges,
-          total_primes: dash?.total_primes ?? 0,
+          total_primes: dash?.prime_semaine_courante ?? 0,
         }}
         canClose={me?.role === "direction"}
       />

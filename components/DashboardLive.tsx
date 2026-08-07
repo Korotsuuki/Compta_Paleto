@@ -60,7 +60,10 @@ export default function DashboardLive({
 
   const beneficeNet =
     (stats?.ca_global ?? 0) -
-    ((stats?.total_charges ?? 0) + (stats?.total_impots ?? 0) + (stats?.total_salaires ?? 0) + (stats?.total_primes ?? 0));
+    ((stats?.total_charges ?? 0) +
+      (stats?.total_impots ?? 0) +
+      (stats?.total_salaires ?? 0) +
+      (stats?.prime_semaine_courante ?? 0));
 
   return (
     <div>
