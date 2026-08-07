@@ -21,11 +21,11 @@ export default function EmployeesTable({
     const channel = supabase
       .channel("employees-live")
       .on("postgres_changes", { event: "*", schema: "public", table: "profiles" }, async () => {
-        const { data } = await supabase.from("v_employees_full").select("*").eq("valide", true).order("prenom");
+        const { data } = await supabase.from("v_employees_full").select("*").eq("valide", true).order("grade_sort_order").order("prenom");
         if (data) setRows(data as EmployeeFull[]);
       })
       .on("postgres_changes", { event: "*", schema: "public", table: "factures" }, async () => {
-        const { data } = await supabase.from("v_employees_full").select("*").eq("valide", true).order("prenom");
+        const { data } = await supabase.from("v_employees_full").select("*").eq("valide", true).order("grade_sort_order").order("prenom");
         if (data) setRows(data as EmployeeFull[]);
       })
       .subscribe();

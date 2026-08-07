@@ -36,11 +36,13 @@ export interface EmployeeFull extends Profile {
   montant_fixe: number | null;
   pourcentage: number | null;
   plafond: number | null;
+  est_mecano: boolean;
   ca_global: number;
   ca_repa_net: number;
   cout_customs: number;
   nombre_factures: number;
   salaire: number;
+  grade_sort_order: number;
 }
 
 export interface Service {

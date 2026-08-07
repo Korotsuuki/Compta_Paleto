@@ -34,7 +34,7 @@ export default async function PrimesPage() {
         </p>
       </header>
 
-      <PrimesPanel initial={(primes ?? []) as any} canEdit={me?.role === "direction"} />
+      <PrimesPanel initial={(primes ?? []) as any} />
     </Shell>
   );
 }

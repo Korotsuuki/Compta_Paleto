@@ -22,7 +22,7 @@ export default async function EmployesPage() {
     .from("v_employees_full")
     .select("*")
     .eq("valide", true)
-    .order("prenom");
+    .order("grade_sort_order").order("prenom");
 
   const { data: pending } = await supabase
     .from("profiles")

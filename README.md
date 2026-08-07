@@ -101,7 +101,21 @@ des migrations précédentes si tu ne les avais pas encore lancées :
 `migration_02_historique_contrats.sql`, puis `migration_03_realtime.sql`,
 puis `migration_04_permissions_banque.sql`, puis
 `migration_05_security_hardening.sql`, puis `migration_06_acces_avances.sql`,
-dans cet ordre.
+puis `migration_07_correctifs_registre.sql`, dans cet ordre.
+
+## Correctifs registre global / primes / tri employés
+
+- **Bug "0 employé(s)" corrigé** : le registre global renvoyait 0 partout
+  tant qu'aucune facture n'existait, à cause d'une jointure mal placée
+  dans le calcul. Réparé — le nombre d'employés, les salaires et le
+  bénéfice net s'affichent maintenant correctement dès la première
+  connexion, même sans aucune facture.
+- Retiré la case "Primes versées" du registre global (gardé uniquement
+  "Prime prévue cette semaine").
+- Simplifié l'onglet **Primes** : plus de "montant versé" à saisir, juste
+  le montant maximum de chaque semaine, calculé automatiquement.
+- La page **Employés** trie maintenant par grade (même ordre que la page
+  Administration), plutôt que par ordre alphabétique.
 
 ## Mise à jour : accès élargis, transfert, primes auto, logs
 

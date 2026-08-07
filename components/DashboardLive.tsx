@@ -88,8 +88,7 @@ export default function DashboardLive({
         <StatCard label="Total à payer employés" value={money(stats?.total_salaires)} />
         <StatCard label="Charges" value={money(stats?.total_charges)} />
         <StatCard label="Impôts" value={money(stats?.total_impots)} />
-        <StatCard label="Primes versées" value={money(stats?.total_primes)} />
-        <StatCard label="Prime prévue cette semaine" value={money(stats?.prime_semaine_courante)} tone="steel" />
+        <StatCard label="Prime prévue cette semaine" value={money(stats?.prime_semaine_courante)} tone="steel" size="lg" />
       </section>
 
       {showTop3 && (
