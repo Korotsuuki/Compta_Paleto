@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import Shell from "@/components/Shell";
 import EmployeesTable from "@/components/EmployeesTable";
 import ValidationQueue from "@/components/ValidationQueue";
+import LicenciesPanel from "@/components/LicenciesPanel";
 import { EmployeeFull, Grade } from "@/lib/types";
 import { redirect } from "next/navigation";
 
@@ -28,7 +29,13 @@ export default async function EmployesPage() {
     .from("profiles")
     .select("*")
     .eq("valide", false)
+    .eq("licencie", false)
     .order("created_at");
+
+  const { data: licencies } =
+    me?.role === "direction"
+      ? await supabase.from("profiles").select("*").eq("licencie", true).order("prenom")
+      : { data: null };
 
   const { data: grades } = await supabase.from("grades").select("*").order("sort_order");
 
@@ -59,7 +66,14 @@ export default async function EmployesPage() {
         employees={(employees ?? []) as EmployeeFull[]}
         grades={(grades ?? []) as Grade[]}
         canEdit={!!canEdit}
+        canFire={canEdit}
       />
+
+      {canEdit && (licencies?.length ?? 0) > 0 && (
+        <div className="mt-8">
+          <LicenciesPanel initial={(licencies ?? []) as any} />
+        </div>
+      )}
     </Shell>
   );
 }

@@ -102,7 +102,44 @@ des migrations précédentes si tu ne les avais pas encore lancées :
 puis `migration_04_permissions_banque.sql`, puis
 `migration_05_security_hardening.sql`, puis `migration_06_acces_avances.sql`,
 puis `migration_07_correctifs_registre.sql`, puis
-`migration_08_impots_customs.sql`, dans cet ordre.
+`migration_08_impots_customs.sql`, puis `migration_09_licenciement_cloture.sql`,
+dans cet ordre.
+
+## Licenciement, menus resserrés, clôture hebdomadaire
+
+- **Retirer un employé** : bouton sur la page Employés (Direction
+  uniquement) — coupe l'accès immédiatement, mais garde tout son
+  historique (factures, contrats) pour les archives. Une section "Employés
+  retirés du site" permet de le réactiver en un clic si besoin.
+- **RH** a maintenant les mêmes autorisations que le **DRH**.
+- **Menus resserrés** :
+  - Chef d'équipe : Registre global, Employés, Partenaires, Ma fiche
+  - Gérant : + Charges
+  - DRH/RH : + Contrats, Primes, Banque, Historique
+  - Direction : tout, + Logs, Administration
+  - Ces restrictions sont appliquées côté base de données (RLS), pas
+    seulement cachées dans le menu.
+- **"Ma fiche"** : présent dans le menu de tout le monde désormais (avant,
+  seuls les Mécanos l'avaient).
+- **Clôture hebdomadaire** (Historique, Direction uniquement) : un bouton
+  "Clôturer et réinitialiser" qui archive le détail de la semaine (par
+  employé : C.A, factures, salaire) puis vide les fiches pour repartir à
+  zéro. Le détail archivé reste téléchargeable en CSV (compatible Excel)
+  depuis la liste des clôtures.
+
+## En attente de tes modèles
+
+Deux choses nécessitent un exemple de ta part avant que je les code :
+- **Contrat automatique** (à la validation + avenant au changement de
+  grade), modifiable et exportable en PDF — envoie-moi un modèle de
+  contrat.
+- **Export Excel exact** de fin de semaine (mise en page précise) — pour
+  l'instant l'export est un CSV générique, à remplacer une fois que j'ai
+  ton modèle. L'export PDF suivra en même temps.
+
+Une phrase de ta dernière liste était aussi incomplète : *"Les
+dépannages, les chaînes, les réparations et les nettoyages."* — dis-moi ce
+qu'il faut en faire.
 
 ## Impôts automatiques + Coût réel Customs/Perf
 

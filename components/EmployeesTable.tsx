@@ -4,15 +4,18 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { EmployeeFull, Grade, money, roleForGradeName, ROLE_LABELS } from "@/lib/types";
+import { UserX } from "lucide-react";
 
 export default function EmployeesTable({
   employees,
   grades,
   canEdit,
+  canFire,
 }: {
   employees: EmployeeFull[];
   grades: Grade[];
   canEdit: boolean;
+  canFire?: boolean;
 }) {
   const supabase = createClient();
   const [rows, setRows] = useState(employees);
@@ -46,6 +49,17 @@ export default function EmployeesTable({
     const next = etat === "actif" ? "absent" : "actif";
     setRows((r) => r.map((e) => (e.id === id ? { ...e, etat: next } : e)));
     await supabase.from("profiles").update({ etat: next }).eq("id", id);
+  };
+
+  const renvoyer = async (e: EmployeeFull) => {
+    if (
+      !confirm(
+        `Retirer ${e.prenom} ${e.nom} du site ? Son accès sera coupé mais son historique (factures, contrats) est conservé.`
+      )
+    )
+      return;
+    setRows((r) => r.filter((x) => x.id !== e.id));
+    await supabase.from("profiles").update({ valide: false, licencie: true }).eq("id", e.id);
   };
 
   return (
@@ -108,9 +122,20 @@ export default function EmployeesTable({
               <td className="p-4 font-mono text-white">{money(e.ca_global)}</td>
               <td className="p-4 font-mono text-signal">{money(e.salaire)}</td>
               <td className="p-4">
-                <Link href={`/employes/${e.id}`} className="text-xs text-steel-light hover:underline">
-                  Voir la fiche →
-                </Link>
+                <div className="flex items-center gap-3">
+                  <Link href={`/employes/${e.id}`} className="text-xs text-steel-light hover:underline">
+                    Voir la fiche →
+                  </Link>
+                  {canFire && (
+                    <button
+                      onClick={() => renvoyer(e)}
+                      className="text-bad/70 hover:text-bad"
+                      title="Retirer du site"
+                    >
+                      <UserX size={15} />
+                    </button>
+                  )}
+                </div>
               </td>
             </tr>
           ))}

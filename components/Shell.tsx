@@ -24,21 +24,16 @@ import {
 } from "lucide-react";
 import { Role, ROLE_LABELS } from "@/lib/types";
 
-const GESTION_NAV = [
-  { href: "/dashboard", label: "Registre global", icon: LayoutDashboard },
-  { href: "/employes", label: "Employés", icon: Users },
-  { href: "/partenaires", label: "Partenaires", icon: Handshake },
-  { href: "/contrats", label: "Contrats", icon: FileText },
-  { href: "/charges", label: "Charges", icon: Receipt },
-  { href: "/primes", label: "Primes", icon: Gift },
-  { href: "/banque", label: "Banque", icon: Landmark },
-  { href: "/historique", label: "Historique", icon: FileClock },
-];
-
-const EMPLOYE_NAV = [
-  { href: "/dashboard", label: "Registre global", icon: LayoutDashboard },
-  { href: "/partenaires", label: "Partenaires", icon: Handshake },
-];
+const DASHBOARD = { href: "/dashboard", label: "Registre global", icon: LayoutDashboard };
+const EMPLOYES = { href: "/employes", label: "Employés", icon: Users };
+const PARTENAIRES = { href: "/partenaires", label: "Partenaires", icon: Handshake };
+const CONTRATS = { href: "/contrats", label: "Contrats", icon: FileText };
+const CHARGES = { href: "/charges", label: "Charges", icon: Receipt };
+const PRIMES = { href: "/primes", label: "Primes", icon: Gift };
+const BANQUE = { href: "/banque", label: "Banque", icon: Landmark };
+const HISTORIQUE = { href: "/historique", label: "Historique", icon: FileClock };
+const LOGS = { href: "/logs", label: "Logs", icon: ScrollText };
+const ADMIN = { href: "/admin", label: "Administration", icon: Settings };
 
 export default function Shell({
   children,
@@ -64,19 +59,23 @@ export default function Shell({
     router.refresh();
   };
 
-  let nav: typeof GESTION_NAV = [];
-  if (role === "employe") {
-    nav = [...EMPLOYE_NAV, { href: `/employes/${userId}`, label: "Ma fiche", icon: UserCircle }];
-  } else if (role === "gouv") {
+  const maFiche = { href: `/employes/${userId}`, label: "Ma fiche", icon: UserCircle };
+
+  let nav: typeof DASHBOARD[] = [];
+  if (role === "gouv") {
     nav = [{ href: "/gouv", label: "Dépenses totales", icon: Banknote }];
+  } else if (role === "employe") {
+    nav = [DASHBOARD, PARTENAIRES, maFiche];
+  } else if (role === "chef_equipe") {
+    nav = [DASHBOARD, EMPLOYES, PARTENAIRES, maFiche];
+  } else if (role === "gerant") {
+    nav = [DASHBOARD, EMPLOYES, PARTENAIRES, CHARGES, maFiche];
+  } else if (role === "drh") {
+    nav = [DASHBOARD, EMPLOYES, PARTENAIRES, CONTRATS, CHARGES, PRIMES, BANQUE, HISTORIQUE, maFiche];
   } else if (role === "direction") {
-    nav = [
-      ...GESTION_NAV,
-      { href: "/logs", label: "Logs", icon: ScrollText },
-      { href: "/admin", label: "Administration", icon: Settings },
-    ];
+    nav = [DASHBOARD, EMPLOYES, PARTENAIRES, CONTRATS, CHARGES, PRIMES, BANQUE, HISTORIQUE, LOGS, ADMIN, maFiche];
   } else {
-    nav = GESTION_NAV;
+    nav = [DASHBOARD];
   }
 
   const sidebarContent = (

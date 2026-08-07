@@ -23,6 +23,7 @@ export default async function ChargesPage() {
 
   if (me?.role === "employe") redirect(`/employes/${auth.user?.id}`);
   if (me?.role === "gouv") redirect("/gouv");
+  if (me?.role === "chef_equipe") redirect("/dashboard");
 
   const { data: charges } = await supabase.from("charges").select("*").order("date", { ascending: false });
 

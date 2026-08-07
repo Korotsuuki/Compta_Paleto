@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { RegistreHistorique, money } from "@/lib/types";
-import { PackageCheck, Download } from "lucide-react";
+import { RegistreHistorique, EmployeeResume, money } from "@/lib/types";
+import { PackageCheck, Download, AlertTriangle } from "lucide-react";
 
 function toCsv(rows: Record<string, any>[]): string {
   if (rows.length === 0) return "";
@@ -27,18 +27,9 @@ function downloadCsv(filename: string, csv: string) {
 
 export default function HistoriquePanel({
   historique,
-  currentSnapshot,
   canClose,
 }: {
   historique: RegistreHistorique[];
-  currentSnapshot: {
-    ca_global: number;
-    ca_repa_net: number;
-    cout_customs: number;
-    total_salaires: number;
-    total_charges: number;
-    total_primes: number;
-  };
   canClose: boolean;
 }) {
   const supabase = createClient();
@@ -46,59 +37,59 @@ export default function HistoriquePanel({
   const [titre, setTitre] = useState("");
   const [debut, setDebut] = useState("");
   const [fin, setFin] = useState("");
-  const [range, setRange] = useState({ debut: "", fin: "" });
-  const [exporting, setExporting] = useState<string | null>(null);
+  const [closing, setClosing] = useState(false);
 
   const cloturer = async () => {
     if (!titre || !debut || !fin) return;
-    const benefice_net =
-      currentSnapshot.ca_global -
-      (currentSnapshot.total_salaires + currentSnapshot.total_charges + currentSnapshot.total_primes);
-    const { data } = await supabase
-      .from("registre_historique")
-      .insert({
-        titre,
-        periode_debut: debut,
-        periode_fin: fin,
-        ca_global: currentSnapshot.ca_global,
-        ca_repa_net: currentSnapshot.ca_repa_net,
-        cout_customs: currentSnapshot.cout_customs,
-        total_salaires: currentSnapshot.total_salaires,
-        total_charges: currentSnapshot.total_charges,
-        total_primes: currentSnapshot.total_primes,
-        benefice_net,
-      })
-      .select()
-      .single();
-    if (data) setRows((r) => [data as RegistreHistorique, ...r]);
-    setTitre("");
-    setDebut("");
-    setFin("");
+    if (
+      !confirm(
+        "Clôturer la semaine ? Toutes les factures actuelles seront définitivement retirées des fiches employés (le C.A repart à 0). Le détail de cette semaine reste consultable ici et téléchargeable."
+      )
+    )
+      return;
+    setClosing(true);
+    const { data, error } = await supabase.rpc("cloturer_semaine", {
+      p_titre: titre,
+      p_periode_debut: debut,
+      p_periode_fin: fin,
+    });
+    if (!error && data) {
+      const { data: row } = await supabase.from("registre_historique").select("*").eq("id", data).single();
+      if (row) setRows((r) => [row as RegistreHistorique, ...r]);
+      setTitre("");
+      setDebut("");
+      setFin("");
+    }
+    setClosing(false);
   };
 
-  const exportTable = async (table: "v_employees_full" | "factures" | "charges", filename: string) => {
-    setExporting(table);
-    let query = supabase.from(table).select("*");
-    if (table !== "v_employees_full") {
-      const dateCol = table === "factures" ? "created_at" : "date";
-      if (range.debut) query = query.gte(dateCol, range.debut);
-      if (range.fin) query = query.lte(dateCol, range.fin);
-    }
-    const { data } = await query;
-    downloadCsv(filename, toCsv((data ?? []) as any));
-    setExporting(null);
+  const exportResume = (h: RegistreHistorique) => {
+    const resume = (h.resume_employes ?? []) as EmployeeResume[];
+    const csvRows = resume.map((e) => ({
+      Prenom: e.prenom,
+      Nom: e.nom,
+      Grade: e.grade,
+      Etat: e.etat,
+      "C.A Global": e.ca_global,
+      "C.A Repa/Net": e.ca_repa_net,
+      "Cout Customs": e.cout_customs,
+      "Nombre factures": e.nombre_factures,
+      Salaire: e.salaire,
+    }));
+    downloadCsv(`${h.titre.replace(/\s+/g, "_")}.csv`, toCsv(csvRows));
   };
 
   return (
     <div className="space-y-6">
       {canClose && (
-        <div className="ticket p-5">
-          <h2 className="font-display uppercase text-white text-sm mb-4 flex items-center gap-2">
-            <PackageCheck size={16} className="text-signal" /> Clôturer une période
+        <div className="ticket p-5 border-caution/40">
+          <h2 className="font-display uppercase text-white text-sm mb-2 flex items-center gap-2">
+            <PackageCheck size={16} className="text-signal" /> Clôturer la semaine
           </h2>
-          <p className="text-xs text-asphalt-600/70 font-mono mb-4">
-            Enregistre une photo des totaux actuels du registre (C.A, salaires, charges, bénéfice) —
-            utile pour comparer semaine après semaine. Ça n'efface aucune donnée existante.
+          <p className="text-xs text-caution/90 font-mono mb-4 flex items-start gap-2">
+            <AlertTriangle size={14} className="shrink-0 mt-0.5" />
+            Action irréversible : toutes les factures actuelles sont archivées ici puis effacées des
+            fiches employés — nouvelle semaine à zéro pour tout le monde.
           </p>
           <div className="grid md:grid-cols-4 gap-3">
             <input
@@ -124,10 +115,10 @@ export default function HistoriquePanel({
             />
             <button
               onClick={cloturer}
-              disabled={!titre || !debut || !fin}
+              disabled={!titre || !debut || !fin || closing}
               className="bg-signal hover:bg-signal-dim disabled:opacity-30 text-asphalt-950 font-medium text-sm py-2 rounded-sm"
             >
-              Clôturer
+              {closing ? "Clôture en cours…" : "Clôturer et réinitialiser"}
             </button>
           </div>
         </div>
@@ -142,6 +133,7 @@ export default function HistoriquePanel({
               <th className="p-4 font-normal text-right">Salaires</th>
               <th className="p-4 font-normal text-right">Charges</th>
               <th className="p-4 font-normal text-right">Bénéfice net</th>
+              <th className="p-4 font-normal"></th>
             </tr>
           </thead>
           <tbody>
@@ -160,11 +152,22 @@ export default function HistoriquePanel({
                 <td className={`p-4 text-right font-mono ${h.benefice_net >= 0 ? "text-ok" : "text-bad"}`}>
                   {money(h.benefice_net)}
                 </td>
+                <td className="p-4 text-right">
+                  {h.resume_employes && (
+                    <button
+                      onClick={() => exportResume(h)}
+                      className="flex items-center gap-1 bg-steel/20 hover:bg-steel/30 text-steel-light text-xs px-2 py-1.5 rounded-sm ml-auto"
+                      title="Télécharger le détail de cette semaine (CSV, s'ouvre dans Excel)"
+                    >
+                      <Download size={13} /> Détail
+                    </button>
+                  )}
+                </td>
               </tr>
             ))}
             {rows.length === 0 && (
               <tr>
-                <td colSpan={5} className="p-6 text-center text-asphalt-600/60">
+                <td colSpan={6} className="p-6 text-center text-asphalt-600/60">
                   Aucune clôture enregistrée pour le moment.
                 </td>
               </tr>
@@ -173,59 +176,10 @@ export default function HistoriquePanel({
         </table>
       </div>
 
-      <div className="ticket p-5">
-        <h2 className="font-display uppercase text-white text-sm mb-4 flex items-center gap-2">
-          <Download size={16} className="text-signal" /> Export CSV
-        </h2>
-        <div className="flex flex-wrap items-end gap-3 mb-4">
-          <div>
-            <label className="text-[11px] font-mono text-asphalt-600/80 block mb-1">Depuis</label>
-            <input
-              suppressHydrationWarning
-              type="date"
-              value={range.debut}
-              onChange={(e) => setRange({ ...range, debut: e.target.value })}
-              className="bg-asphalt-800 border border-asphalt-700 rounded-sm px-2 py-1.5 text-white text-sm"
-            />
-          </div>
-          <div>
-            <label className="text-[11px] font-mono text-asphalt-600/80 block mb-1">Jusqu'à</label>
-            <input
-              suppressHydrationWarning
-              type="date"
-              value={range.fin}
-              onChange={(e) => setRange({ ...range, fin: e.target.value })}
-              className="bg-asphalt-800 border border-asphalt-700 rounded-sm px-2 py-1.5 text-white text-sm"
-            />
-          </div>
-          <span className="text-xs text-asphalt-600/60 font-mono pb-2">
-            (s'applique aux factures et charges — laisser vide pour tout exporter)
-          </span>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <button
-            onClick={() => exportTable("v_employees_full", "employes.csv")}
-            disabled={exporting === "v_employees_full"}
-            className="flex items-center gap-2 bg-steel/20 hover:bg-steel/30 text-steel-light text-sm px-3 py-2 rounded-sm"
-          >
-            <Download size={14} /> Employés
-          </button>
-          <button
-            onClick={() => exportTable("factures", "factures.csv")}
-            disabled={exporting === "factures"}
-            className="flex items-center gap-2 bg-steel/20 hover:bg-steel/30 text-steel-light text-sm px-3 py-2 rounded-sm"
-          >
-            <Download size={14} /> Factures
-          </button>
-          <button
-            onClick={() => exportTable("charges", "charges.csv")}
-            disabled={exporting === "charges"}
-            className="flex items-center gap-2 bg-steel/20 hover:bg-steel/30 text-steel-light text-sm px-3 py-2 rounded-sm"
-          >
-            <Download size={14} /> Charges
-          </button>
-        </div>
-      </div>
+      <p className="text-xs text-asphalt-600/60 font-mono">
+        L'export "Détail" ci-dessus est un CSV (compatible Excel) en attendant le modèle précis —
+        dis-moi à quoi doit ressembler le fichier final et j'ajoute aussi l'export PDF.
+      </p>
     </div>
   );
 }

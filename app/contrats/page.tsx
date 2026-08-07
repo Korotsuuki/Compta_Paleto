@@ -15,6 +15,7 @@ export default async function ContratsPage() {
 
   if (me?.role === "employe") redirect(`/employes/${auth.user?.id}`);
   if (me?.role === "gouv") redirect("/gouv");
+  if (me?.role === "gerant" || me?.role === "chef_equipe") redirect("/dashboard");
 
   const { data: contrats } = await supabase
     .from("contrats")

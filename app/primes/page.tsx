@@ -15,6 +15,7 @@ export default async function PrimesPage() {
 
   if (me?.role === "employe") redirect(`/employes/${auth.user?.id}`);
   if (me?.role === "gouv") redirect("/gouv");
+  if (me?.role === "gerant" || me?.role === "chef_equipe") redirect("/dashboard");
 
   const { data: primes } = await supabase.rpc("get_primes_mois_courant");
 

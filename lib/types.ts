@@ -28,6 +28,7 @@ export interface Profile {
   employee_code: string | null;
   role: Role;
   valide: boolean;
+  licencie: boolean;
 }
 
 export interface EmployeeFull extends Profile {
@@ -143,6 +144,19 @@ export interface Contrat {
   date_signature: string;
 }
 
+export interface EmployeeResume {
+  employee_id: string;
+  prenom: string | null;
+  nom: string | null;
+  grade: string | null;
+  etat: string;
+  ca_global: number;
+  ca_repa_net: number;
+  cout_customs: number;
+  nombre_factures: number;
+  salaire: number;
+}
+
 export interface RegistreHistorique {
   id: string;
   titre: string;
@@ -153,8 +167,10 @@ export interface RegistreHistorique {
   cout_customs: number;
   total_salaires: number;
   total_charges: number;
+  total_impots: number;
   total_primes: number;
   benefice_net: number;
+  resume_employes: EmployeeResume[] | null;
   created_at: string;
 }
 
@@ -182,6 +198,7 @@ const GRADE_TO_ROLE: Record<string, Role> = {
   Patron: "direction",
   "Co-Patron": "direction",
   DRH: "drh",
+  RH: "drh",
   Gérant: "gerant",
   "Chef d'équipe": "chef_equipe",
 };
