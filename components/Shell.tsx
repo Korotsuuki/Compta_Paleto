@@ -65,15 +65,15 @@ export default function Shell({
   if (role === "gouv") {
     nav = [{ href: "/gouv", label: "Dépenses totales", icon: Banknote }];
   } else if (role === "employe") {
-    nav = [DASHBOARD, PARTENAIRES, maFiche];
+    nav = [DASHBOARD, maFiche, PARTENAIRES];
   } else if (role === "chef_equipe") {
-    nav = [DASHBOARD, EMPLOYES, PARTENAIRES, maFiche];
+    nav = [DASHBOARD, maFiche, EMPLOYES, PARTENAIRES];
   } else if (role === "gerant") {
-    nav = [DASHBOARD, EMPLOYES, PARTENAIRES, CHARGES, maFiche];
+    nav = [DASHBOARD, maFiche, EMPLOYES, PARTENAIRES, CHARGES];
   } else if (role === "drh") {
-    nav = [DASHBOARD, EMPLOYES, PARTENAIRES, CONTRATS, CHARGES, PRIMES, BANQUE, HISTORIQUE, maFiche];
+    nav = [DASHBOARD, maFiche, EMPLOYES, PARTENAIRES, CONTRATS, CHARGES, PRIMES, BANQUE, HISTORIQUE];
   } else if (role === "direction") {
-    nav = [DASHBOARD, EMPLOYES, PARTENAIRES, CONTRATS, CHARGES, PRIMES, BANQUE, HISTORIQUE, LOGS, ADMIN, maFiche];
+    nav = [DASHBOARD, maFiche, EMPLOYES, PARTENAIRES, CONTRATS, CHARGES, PRIMES, BANQUE, HISTORIQUE, LOGS, ADMIN];
   } else {
     nav = [DASHBOARD];
   }

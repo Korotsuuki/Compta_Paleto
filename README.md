@@ -103,7 +103,21 @@ puis `migration_04_permissions_banque.sql`, puis
 `migration_05_security_hardening.sql`, puis `migration_06_acces_avances.sql`,
 puis `migration_07_correctifs_registre.sql`, puis
 `migration_08_impots_customs.sql`, puis `migration_09_licenciement_cloture.sql`,
-dans cet ordre.
+puis `migration_10_partage_factures.sql`, dans cet ordre.
+
+## Historique filtré, partage de facture, réorganisation
+
+- **Historique sur la fiche employé** : n'affiche plus que les factures
+  "Custom" (Déplacement/Chaîne/Réparation/Nettoyage restent comptés dans
+  le C.A comme avant, juste plus listés en détail).
+- **Partager une Custom** (anciennement "Transférer") : la facture reste
+  dans l'historique de la personne qui l'a créée, avec le nom du
+  destinataire affiché — mais elle compte désormais dans le **C.A de la
+  personne qui l'a reçue**, plus dans celui du donneur. Un bouton permet
+  d'annuler le partage.
+- **"Ma fiche"** repositionné juste sous "Registre global" dans le menu.
+- **Suppression d'une clôture** dans Historique (Direction), utile pour
+  nettoyer des tests.
 
 ## Licenciement, menus resserrés, clôture hebdomadaire
 

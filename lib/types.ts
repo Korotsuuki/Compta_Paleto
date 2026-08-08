@@ -65,6 +65,7 @@ export interface Facture {
   quantite: number;
   client_identite: string | null;
   client_telephone: string | null;
+  partage_avec: string | null;
   created_at: string;
 }
 

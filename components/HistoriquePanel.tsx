@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { RegistreHistorique, EmployeeResume, money } from "@/lib/types";
-import { PackageCheck, Download, AlertTriangle } from "lucide-react";
+import { PackageCheck, Download, AlertTriangle, Trash2 } from "lucide-react";
 
 function toCsv(rows: Record<string, any>[]): string {
   if (rows.length === 0) return "";
@@ -61,6 +61,12 @@ export default function HistoriquePanel({
       setFin("");
     }
     setClosing(false);
+  };
+
+  const deleteWeek = async (h: RegistreHistorique) => {
+    if (!confirm(`Supprimer la clôture "${h.titre}" de l'historique ? Cette action est irréversible.`)) return;
+    setRows((r) => r.filter((x) => x.id !== h.id));
+    await supabase.from("registre_historique").delete().eq("id", h.id);
   };
 
   const exportResume = (h: RegistreHistorique) => {
@@ -153,15 +159,26 @@ export default function HistoriquePanel({
                   {money(h.benefice_net)}
                 </td>
                 <td className="p-4 text-right">
-                  {h.resume_employes && (
-                    <button
-                      onClick={() => exportResume(h)}
-                      className="flex items-center gap-1 bg-steel/20 hover:bg-steel/30 text-steel-light text-xs px-2 py-1.5 rounded-sm ml-auto"
-                      title="Télécharger le détail de cette semaine (CSV, s'ouvre dans Excel)"
-                    >
-                      <Download size={13} /> Détail
-                    </button>
-                  )}
+                  <div className="flex items-center justify-end gap-2">
+                    {h.resume_employes && (
+                      <button
+                        onClick={() => exportResume(h)}
+                        className="flex items-center gap-1 bg-steel/20 hover:bg-steel/30 text-steel-light text-xs px-2 py-1.5 rounded-sm"
+                        title="Télécharger le détail de cette semaine (CSV, s'ouvre dans Excel)"
+                      >
+                        <Download size={13} /> Détail
+                      </button>
+                    )}
+                    {canClose && (
+                      <button
+                        onClick={() => deleteWeek(h)}
+                        className="p-1.5 bg-bad/20 hover:bg-bad/30 text-bad rounded-sm"
+                        title="Supprimer cette clôture"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    )}
+                  </div>
                 </td>
               </tr>
             ))}

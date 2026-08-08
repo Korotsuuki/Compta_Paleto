@@ -3,7 +3,7 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { EmployeeFull, Facture, Service, Partenaire, TransferTarget, money } from "@/lib/types";
-import { Minus, Plus, Trash2, Percent, Pencil, Save, X, ArrowRightLeft } from "lucide-react";
+import { Minus, Plus, Trash2, Percent, Pencil, Save, X, Share2, Undo2 } from "lucide-react";
 
 const CATEGORY_LABELS: Record<string, string> = {
   depannage: "Dépannages",
@@ -85,6 +85,11 @@ export default function EmployeeTicket({
         { event: "*", schema: "public", table: "factures", filter: `employee_id=eq.${employee.id}` },
         () => refreshAll()
       )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "factures", filter: `partage_avec=eq.${employee.id}` },
+        () => refreshAll()
+      )
       .subscribe();
 
     return () => {
@@ -134,21 +139,27 @@ export default function EmployeeTicket({
     if (last) await deleteFacture(last.id);
   };
 
-  const [transferringId, setTransferringId] = useState<string | null>(null);
-  const [transferTarget, setTransferTarget] = useState("");
-  const [transferring, setTransferring] = useState(false);
+  const [sharingId, setSharingId] = useState<string | null>(null);
+  const [shareTarget, setShareTarget] = useState("");
+  const [sharing, setSharing] = useState(false);
 
-  const confirmTransfer = async () => {
-    if (!transferringId || !transferTarget) return;
-    setTransferring(true);
-    const { error } = await supabase.rpc("transfer_facture", {
-      p_facture_id: transferringId,
-      p_new_employee_id: transferTarget,
+  const confirmShare = async () => {
+    if (!sharingId || !shareTarget) return;
+    setSharing(true);
+    const { error } = await supabase.rpc("partager_facture", {
+      p_facture_id: sharingId,
+      p_avec_employee_id: shareTarget,
     });
     if (!error) await refreshAll();
-    setTransferringId(null);
-    setTransferTarget("");
-    setTransferring(false);
+    setSharingId(null);
+    setShareTarget("");
+    setSharing(false);
+  };
+
+  const annulerPartage = async (factureId: string) => {
+    if (!canOperate) return;
+    await supabase.rpc("annuler_partage_facture", { p_facture_id: factureId });
+    await refreshAll();
   };
 
   const panier = parseFloat(panierAmount.replace(",", ".")) || 0;
@@ -190,7 +201,13 @@ export default function EmployeeTicket({
 
   const customService = services.find((s) => s.montant_libre);
   const customFactures = factures.filter((f) => f.service_id === customService?.id);
-  const customTotal = customFactures.reduce((sum, f) => sum + f.montant, 0);
+  const customTotal = customFactures
+    .filter((f) => !f.partage_avec)
+    .reduce((sum, f) => sum + f.montant, 0);
+  const nameFor = (id: string) => {
+    const t = transferTargets.find((x) => x.id === id);
+    return t ? `${t.prenom ?? ""} ${t.nom ?? ""}`.trim() : "quelqu'un";
+  };
 
   return (
     <div>
@@ -401,27 +418,41 @@ export default function EmployeeTicket({
 
       <section className="ticket p-5 mt-6">
         <h2 className="font-display uppercase text-white text-sm mb-4 tracking-wide">
-          Historique ({factures.length} facture{factures.length > 1 ? "s" : ""})
+          Historique des Custom ({customFactures.length} facture{customFactures.length > 1 ? "s" : ""})
         </h2>
         <div className="max-h-64 overflow-y-auto">
           <table className="w-full text-xs font-mono">
             <tbody>
-              {factures.slice(0, 30).map((f) => (
+              {customFactures.slice(0, 30).map((f) => (
                 <Fragment key={f.id}>
                   <tr className="border-b border-asphalt-800 text-asphalt-600">
                     <td className="py-1.5">{new Date(f.created_at).toLocaleString("fr-FR")}</td>
-                    <td className="py-1.5">{services.find((s) => s.id === f.service_id)?.nom ?? "—"}</td>
-                    <td className="py-1.5 text-right text-white">{money(f.montant)}</td>
-                    <td className="py-1.5 pl-3 text-right whitespace-nowrap">
+                    <td className="py-1.5">
+                      {money(f.montant)}
+                      {f.partage_avec && (
+                        <span className="text-steel-light/80"> · partagée avec {nameFor(f.partage_avec)}</span>
+                      )}
+                    </td>
+                    <td className="py-1.5 text-right whitespace-nowrap">
                       {canOperate && (
                         <>
-                          <button
-                            onClick={() => setTransferringId(transferringId === f.id ? null : f.id)}
-                            className="p-1 text-steel-light/70 hover:text-steel-light mr-1"
-                            title="Transférer cette facture à quelqu'un d'autre"
-                          >
-                            <ArrowRightLeft size={13} />
-                          </button>
+                          {f.partage_avec ? (
+                            <button
+                              onClick={() => annulerPartage(f.id)}
+                              className="p-1 text-caution/70 hover:text-caution mr-1"
+                              title="Annuler le partage"
+                            >
+                              <Undo2 size={13} />
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => setSharingId(sharingId === f.id ? null : f.id)}
+                              className="p-1 text-steel-light/70 hover:text-steel-light mr-1"
+                              title="Partager cette facture avec quelqu'un d'autre"
+                            >
+                              <Share2 size={13} />
+                            </button>
+                          )}
                           <button
                             onClick={() => {
                               if (confirm("Supprimer cette facture ? L'employé pourra la refaire correctement."))
@@ -436,14 +467,14 @@ export default function EmployeeTicket({
                       )}
                     </td>
                   </tr>
-                  {transferringId === f.id && (
+                  {sharingId === f.id && (
                     <tr className="border-b border-asphalt-800">
-                      <td colSpan={4} className="py-2">
+                      <td colSpan={3} className="py-2">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-asphalt-600/70">Transférer à :</span>
+                          <span className="text-asphalt-600/70">Partager avec :</span>
                           <select
-                            value={transferTarget}
-                            onChange={(e) => setTransferTarget(e.target.value)}
+                            value={shareTarget}
+                            onChange={(e) => setShareTarget(e.target.value)}
                             className="bg-asphalt-800 border border-asphalt-700 rounded-sm px-2 py-1 text-white text-xs"
                           >
                             <option value="">Choisir un employé…</option>
@@ -454,14 +485,14 @@ export default function EmployeeTicket({
                             ))}
                           </select>
                           <button
-                            onClick={confirmTransfer}
-                            disabled={!transferTarget || transferring}
+                            onClick={confirmShare}
+                            disabled={!shareTarget || sharing}
                             className="bg-steel/30 hover:bg-steel/40 disabled:opacity-30 text-steel-light px-2 py-1 rounded-sm"
                           >
                             Confirmer
                           </button>
                           <button
-                            onClick={() => setTransferringId(null)}
+                            onClick={() => setSharingId(null)}
                             className="text-asphalt-600 hover:text-white px-2 py-1"
                           >
                             Annuler
@@ -472,9 +503,9 @@ export default function EmployeeTicket({
                   )}
                 </Fragment>
               ))}
-              {factures.length === 0 && (
+              {customFactures.length === 0 && (
                 <tr>
-                  <td className="py-3 text-asphalt-600/60">Aucune facture pour le moment.</td>
+                  <td className="py-3 text-asphalt-600/60">Aucune facture Custom pour le moment.</td>
                 </tr>
               )}
             </tbody>
