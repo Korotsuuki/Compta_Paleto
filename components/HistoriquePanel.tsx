@@ -38,6 +38,7 @@ export default function HistoriquePanel({
   const [debut, setDebut] = useState("");
   const [fin, setFin] = useState("");
   const [closing, setClosing] = useState(false);
+  const [closeError, setCloseError] = useState<string | null>(null);
 
   const cloturer = async () => {
     if (!titre || !debut || !fin) return;
@@ -48,13 +49,21 @@ export default function HistoriquePanel({
     )
       return;
     setClosing(true);
+    setCloseError(null);
     const { data, error } = await supabase.rpc("cloturer_semaine", {
       p_titre: titre,
       p_periode_debut: debut,
       p_periode_fin: fin,
     });
-    if (!error && data) {
-      const { data: row } = await supabase.from("registre_historique").select("*").eq("id", data).single();
+    if (error) {
+      setCloseError(error.message);
+    } else if (data) {
+      const { data: row, error: fetchError } = await supabase
+        .from("registre_historique")
+        .select("*")
+        .eq("id", data)
+        .single();
+      if (fetchError) setCloseError(fetchError.message);
       if (row) setRows((r) => [row as RegistreHistorique, ...r]);
       setTitre("");
       setDebut("");
@@ -127,6 +136,9 @@ export default function HistoriquePanel({
               {closing ? "Clôture en cours…" : "Clôturer et réinitialiser"}
             </button>
           </div>
+          {closeError && (
+            <p className="text-xs text-bad font-mono mt-3">Erreur : {closeError}</p>
+          )}
         </div>
       )}
 
