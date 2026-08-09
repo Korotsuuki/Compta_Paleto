@@ -4,7 +4,7 @@ import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Contrat } from "@/lib/types";
 import ContractDocument from "@/components/ContractDocument";
-import { Upload, Download, Trash2, FileText, FilePlus2, ChevronDown, ChevronRight } from "lucide-react";
+import { Upload, Download, Trash2, FileText, FilePlus2, ChevronDown, ChevronRight, Plus } from "lucide-react";
 
 export default function ContractsPanel({
   contracts,
@@ -32,7 +32,9 @@ export default function ContractsPanel({
   const [uploading, setUploading] = useState(false);
   const [genererPourId, setGenererPourId] = useState("");
   const [generating, setGenerating] = useState(false);
+  const [generateError, setGenerateError] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [showUpload, setShowUpload] = useState(false);
 
   const upload = async () => {
     if (!file || !titre) return;
@@ -60,12 +62,20 @@ export default function ContractsPanel({
   const genererContrat = async () => {
     if (!genererPourId) return;
     setGenerating(true);
+    setGenerateError(null);
     const { data, error } = await supabase.rpc("generer_contrat", { p_employee_id: genererPourId });
-    if (!error && data) {
-      const { data: row } = await supabase.from("contrats").select("*").eq("id", data).single();
+    if (error) {
+      setGenerateError(error.message);
+    } else if (data) {
+      const { data: row, error: fetchError } = await supabase
+        .from("contrats")
+        .select("*")
+        .eq("id", data)
+        .single();
+      if (fetchError) setGenerateError(fetchError.message);
       if (row) setRows((r) => [row as Contrat, ...r]);
+      setGenererPourId("");
     }
-    setGenererPourId("");
     setGenerating(false);
   };
 
@@ -109,6 +119,10 @@ export default function ContractsPanel({
             <FilePlus2 size={15} /> {generating ? "Génération…" : "Générer"}
           </button>
         </div>
+      )}
+
+      {generateError && (
+        <p className="text-xs text-bad font-mono mb-4 -mt-2">Erreur : {generateError}</p>
       )}
 
       <div className="space-y-2 mb-4">
@@ -168,55 +182,74 @@ export default function ContractsPanel({
       </div>
 
       {canManage && (
-        <div className="pt-4 border-t border-asphalt-700 space-y-2">
-          <input
-              suppressHydrationWarning
-            placeholder="Titre du contrat"
-            value={titre}
-            onChange={(e) => setTitre(e.target.value)}
-            className="w-full bg-asphalt-800 border border-asphalt-700 rounded-sm px-2 py-1.5 text-sm text-white"
-          />
-          {employees && (
-            <select
-              value={employeeId}
-              onChange={(e) => setEmployeeId(e.target.value)}
-              className="w-full bg-asphalt-800 border border-asphalt-700 rounded-sm px-2 py-1.5 text-sm text-white"
+        <div className="pt-4 border-t border-asphalt-700">
+          {!showUpload ? (
+            <button
+              onClick={() => setShowUpload(true)}
+              className="flex items-center gap-1 text-xs text-asphalt-600 hover:text-white"
             >
-              <option value="">— Aucun employé lié —</option>
-              {employees.map((e) => (
-                <option key={e.id} value={e.id}>
-                  {e.label}
-                </option>
-              ))}
-            </select>
+              <Plus size={13} /> Ajouter un contrat par fichier (ex: pour un partenaire)
+            </button>
+          ) : (
+            <div className="space-y-2">
+              <input
+                suppressHydrationWarning
+                placeholder="Titre du contrat"
+                value={titre}
+                onChange={(e) => setTitre(e.target.value)}
+                className="w-full bg-asphalt-800 border border-asphalt-700 rounded-sm px-2 py-1.5 text-sm text-white"
+              />
+              {employees && (
+                <select
+                  value={employeeId}
+                  onChange={(e) => setEmployeeId(e.target.value)}
+                  className="w-full bg-asphalt-800 border border-asphalt-700 rounded-sm px-2 py-1.5 text-sm text-white"
+                >
+                  <option value="">— Aucun employé lié —</option>
+                  {employees.map((e) => (
+                    <option key={e.id} value={e.id}>
+                      {e.label}
+                    </option>
+                  ))}
+                </select>
+              )}
+              {partenaires && (
+                <select
+                  value={partenaireId}
+                  onChange={(e) => setPartenaireId(e.target.value)}
+                  className="w-full bg-asphalt-800 border border-asphalt-700 rounded-sm px-2 py-1.5 text-sm text-white"
+                >
+                  <option value="">— Aucun partenaire lié —</option>
+                  {partenaires.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.label}
+                    </option>
+                  ))}
+                </select>
+              )}
+              <input
+                suppressHydrationWarning
+                type="file"
+                onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                className="w-full text-xs text-asphalt-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-sm file:border-0 file:bg-asphalt-700 file:text-white file:text-xs"
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={upload}
+                  disabled={!file || !titre || uploading}
+                  className="flex-1 flex items-center justify-center gap-2 bg-signal hover:bg-signal-dim disabled:opacity-30 text-asphalt-950 font-medium text-sm py-2 rounded-sm"
+                >
+                  <Upload size={15} /> {uploading ? "Envoi en cours…" : "Envoyer le contrat"}
+                </button>
+                <button
+                  onClick={() => setShowUpload(false)}
+                  className="text-xs text-asphalt-600 hover:text-white px-3"
+                >
+                  Annuler
+                </button>
+              </div>
+            </div>
           )}
-          {partenaires && (
-            <select
-              value={partenaireId}
-              onChange={(e) => setPartenaireId(e.target.value)}
-              className="w-full bg-asphalt-800 border border-asphalt-700 rounded-sm px-2 py-1.5 text-sm text-white"
-            >
-              <option value="">— Aucun partenaire lié —</option>
-              {partenaires.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.label}
-                </option>
-              ))}
-            </select>
-          )}
-          <input
-              suppressHydrationWarning
-            type="file"
-            onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-            className="w-full text-xs text-asphalt-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-sm file:border-0 file:bg-asphalt-700 file:text-white file:text-xs"
-          />
-          <button
-            onClick={upload}
-            disabled={!file || !titre || uploading}
-            className="w-full flex items-center justify-center gap-2 bg-signal hover:bg-signal-dim disabled:opacity-30 text-asphalt-950 font-medium text-sm py-2 rounded-sm"
-          >
-            <Upload size={15} /> {uploading ? "Envoi en cours…" : "Envoyer le contrat"}
-          </button>
         </div>
       )}
     </div>
