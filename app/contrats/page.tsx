@@ -22,7 +22,12 @@ export default async function ContratsPage() {
     .select("*")
     .order("date_signature", { ascending: false });
 
-  const { data: employees } = await supabase.from("profiles").select("id, prenom, nom").order("prenom");
+  const { data: employees } = await supabase
+    .from("profiles")
+    .select("id, prenom, nom")
+    .eq("valide", true)
+    .neq("role", "gouv")
+    .order("prenom");
   const { data: partenaires } = await supabase.from("partenaires").select("id, nom").order("nom");
 
   const canManage = me?.role === "direction" || me?.role === "drh";

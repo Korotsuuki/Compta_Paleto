@@ -29,6 +29,7 @@ const config: Config = {
         display: ["var(--font-display)", "sans-serif"],
         mono: ["var(--font-mono)", "monospace"],
         body: ["var(--font-body)", "sans-serif"],
+        signature: ["var(--font-signature)", "cursive"],
       },
       backgroundImage: {
         diamond:

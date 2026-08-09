@@ -47,16 +47,18 @@ export default function EmployeeTicket({
 
   const canEditInfo = isOwner || canManageProfile;
   const [editingInfo, setEditingInfo] = useState(false);
-  const [infoForm, setInfoForm] = useState({
+  const blankInfo = {
     prenom: employee.prenom ?? "",
     nom: employee.nom ?? "",
     telephone: employee.telephone ?? "",
-  });
-  const [infoDisplay, setInfoDisplay] = useState({
-    prenom: employee.prenom ?? "",
-    nom: employee.nom ?? "",
-    telephone: employee.telephone ?? "",
-  });
+    date_naissance: employee.date_naissance ?? "",
+    ville_naissance: employee.ville_naissance ?? "",
+    nationalite: employee.nationalite ?? "",
+    numero_secu: employee.numero_secu ?? "",
+    date_visite_medicale: employee.date_visite_medicale ?? "",
+  };
+  const [infoForm, setInfoForm] = useState(blankInfo);
+  const [infoDisplay, setInfoDisplay] = useState(blankInfo);
   const [savingInfo, setSavingInfo] = useState(false);
 
   const saveInfo = async () => {
@@ -67,6 +69,11 @@ export default function EmployeeTicket({
         prenom: infoForm.prenom || null,
         nom: infoForm.nom || null,
         telephone: infoForm.telephone || null,
+        date_naissance: infoForm.date_naissance || null,
+        ville_naissance: infoForm.ville_naissance || null,
+        nationalite: infoForm.nationalite || null,
+        numero_secu: infoForm.numero_secu || null,
+        date_visite_medicale: infoForm.date_visite_medicale || null,
       })
       .eq("id", employee.id);
     if (!error) {
@@ -255,6 +262,53 @@ export default function EmployeeTicket({
                   onChange={(e) => setInfoForm({ ...infoForm, telephone: e.target.value })}
                   className="bg-asphalt-800 border border-asphalt-700 rounded-sm px-2 py-1.5 text-white text-sm w-32"
                   placeholder="555-0000"
+                />
+              </div>
+              <div>
+                <label className="text-[11px] font-mono text-asphalt-600/80 block mb-1">Date de naissance</label>
+                <input
+                  suppressHydrationWarning
+                  type="date"
+                  value={infoForm.date_naissance}
+                  onChange={(e) => setInfoForm({ ...infoForm, date_naissance: e.target.value })}
+                  className="bg-asphalt-800 border border-asphalt-700 rounded-sm px-2 py-1.5 text-white text-sm w-36"
+                />
+              </div>
+              <div>
+                <label className="text-[11px] font-mono text-asphalt-600/80 block mb-1">Ville de naissance</label>
+                <input
+                  suppressHydrationWarning
+                  value={infoForm.ville_naissance}
+                  onChange={(e) => setInfoForm({ ...infoForm, ville_naissance: e.target.value })}
+                  className="bg-asphalt-800 border border-asphalt-700 rounded-sm px-2 py-1.5 text-white text-sm w-32"
+                />
+              </div>
+              <div>
+                <label className="text-[11px] font-mono text-asphalt-600/80 block mb-1">Nationalité</label>
+                <input
+                  suppressHydrationWarning
+                  value={infoForm.nationalite}
+                  onChange={(e) => setInfoForm({ ...infoForm, nationalite: e.target.value })}
+                  className="bg-asphalt-800 border border-asphalt-700 rounded-sm px-2 py-1.5 text-white text-sm w-32"
+                />
+              </div>
+              <div>
+                <label className="text-[11px] font-mono text-asphalt-600/80 block mb-1">N° sécu (ID joueur)</label>
+                <input
+                  suppressHydrationWarning
+                  value={infoForm.numero_secu}
+                  onChange={(e) => setInfoForm({ ...infoForm, numero_secu: e.target.value })}
+                  className="bg-asphalt-800 border border-asphalt-700 rounded-sm px-2 py-1.5 text-white text-sm w-32"
+                />
+              </div>
+              <div>
+                <label className="text-[11px] font-mono text-asphalt-600/80 block mb-1">Visite médicale</label>
+                <input
+                  suppressHydrationWarning
+                  type="date"
+                  value={infoForm.date_visite_medicale}
+                  onChange={(e) => setInfoForm({ ...infoForm, date_visite_medicale: e.target.value })}
+                  className="bg-asphalt-800 border border-asphalt-700 rounded-sm px-2 py-1.5 text-white text-sm w-36"
                 />
               </div>
               <button

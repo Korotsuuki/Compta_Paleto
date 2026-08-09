@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Contrat } from "@/lib/types";
-import { Upload, Download, Trash2, FileText } from "lucide-react";
+import ContractDocument from "@/components/ContractDocument";
+import { Upload, Download, Trash2, FileText, FilePlus2, ChevronDown, ChevronRight } from "lucide-react";
 
 export default function ContractsPanel({
   contracts,
@@ -29,6 +30,9 @@ export default function ContractsPanel({
   const [partenaireId, setPartenaireId] = useState(defaultPartenaireId ?? "");
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [genererPourId, setGenererPourId] = useState("");
+  const [generating, setGenerating] = useState(false);
+  const [expanded, setExpanded] = useState<string | null>(null);
 
   const upload = async () => {
     if (!file || !titre) return;
@@ -53,6 +57,18 @@ export default function ContractsPanel({
     setUploading(false);
   };
 
+  const genererContrat = async () => {
+    if (!genererPourId) return;
+    setGenerating(true);
+    const { data, error } = await supabase.rpc("generer_contrat", { p_employee_id: genererPourId });
+    if (!error && data) {
+      const { data: row } = await supabase.from("contrats").select("*").eq("id", data).single();
+      if (row) setRows((r) => [row as Contrat, ...r]);
+    }
+    setGenererPourId("");
+    setGenerating(false);
+  };
+
   const download = async (path: string) => {
     const { data } = await supabase.storage.from("contrats").createSignedUrl(path, 300);
     if (data?.signedUrl) window.open(data.signedUrl, "_blank");
@@ -71,41 +87,82 @@ export default function ContractsPanel({
         <FileText size={16} className="text-signal" /> Contrats
       </h2>
 
+      {canManage && employees && (
+        <div className="flex flex-wrap gap-2 mb-4 pb-4 border-b border-asphalt-700">
+          <select
+            value={genererPourId}
+            onChange={(e) => setGenererPourId(e.target.value)}
+            className="bg-asphalt-800 border border-asphalt-700 rounded-sm px-2 py-1.5 text-sm text-white flex-1 min-w-[180px]"
+          >
+            <option value="">Générer un contrat pour…</option>
+            {employees.map((e) => (
+              <option key={e.id} value={e.id}>
+                {e.label}
+              </option>
+            ))}
+          </select>
+          <button
+            onClick={genererContrat}
+            disabled={!genererPourId || generating}
+            className="flex items-center gap-1 bg-steel/30 hover:bg-steel/40 disabled:opacity-30 text-steel-light text-sm px-3 py-1.5 rounded-sm"
+          >
+            <FilePlus2 size={15} /> {generating ? "Génération…" : "Générer"}
+          </button>
+        </div>
+      )}
+
       <div className="space-y-2 mb-4">
         {rows.length === 0 && (
           <p className="text-asphalt-600/60 text-sm">Aucun contrat enregistré.</p>
         )}
         {rows.map((c) => (
-          <div
-            key={c.id}
-            className="ticket-stub pl-3 flex items-center justify-between py-2 pr-2"
-          >
-            <div>
-              <div className="text-white text-sm">{c.titre}</div>
-              <div className="text-xs font-mono text-asphalt-600/70">
-                {new Date(c.date_signature).toLocaleDateString("fr-FR")}
+          <div key={c.id} className="ticket-stub pl-3">
+            <div className="flex items-center justify-between py-2 pr-2">
+              <button
+                onClick={() => c.champs && setExpanded(expanded === c.id ? null : c.id)}
+                className="flex items-center gap-2 text-left flex-1"
+                disabled={!c.champs}
+              >
+                {c.champs &&
+                  (expanded === c.id ? (
+                    <ChevronDown size={14} className="text-asphalt-600 shrink-0" />
+                  ) : (
+                    <ChevronRight size={14} className="text-asphalt-600 shrink-0" />
+                  ))}
+                <div>
+                  <div className="text-white text-sm">{c.titre}</div>
+                  <div className="text-xs font-mono text-asphalt-600/70">
+                    {new Date(c.date_signature).toLocaleDateString("fr-FR")}
+                    {c.type !== "upload" && <span className="text-steel-light/70"> · généré</span>}
+                  </div>
+                </div>
+              </button>
+              <div className="flex gap-1">
+                {c.fichier_url && (
+                  <button
+                    onClick={() => download(c.fichier_url!)}
+                    className="p-1.5 bg-steel/20 hover:bg-steel/30 text-steel-light rounded-sm"
+                    title="Télécharger"
+                  >
+                    <Download size={14} />
+                  </button>
+                )}
+                {canDelete && (
+                  <button
+                    onClick={() => remove(c)}
+                    className="p-1.5 bg-bad/20 hover:bg-bad/30 text-bad rounded-sm"
+                    title="Supprimer"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                )}
               </div>
             </div>
-            <div className="flex gap-1">
-              {c.fichier_url && (
-                <button
-                  onClick={() => download(c.fichier_url!)}
-                  className="p-1.5 bg-steel/20 hover:bg-steel/30 text-steel-light rounded-sm"
-                  title="Télécharger"
-                >
-                  <Download size={14} />
-                </button>
-              )}
-              {canDelete && (
-                <button
-                  onClick={() => remove(c)}
-                  className="p-1.5 bg-bad/20 hover:bg-bad/30 text-bad rounded-sm"
-                  title="Supprimer"
-                >
-                  <Trash2 size={14} />
-                </button>
-              )}
-            </div>
+            {expanded === c.id && c.champs && (
+              <div className="pb-3">
+                <ContractDocument contrat={c} canEdit={canManage} />
+              </div>
+            )}
           </div>
         ))}
       </div>

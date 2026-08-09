@@ -103,7 +103,34 @@ puis `migration_04_permissions_banque.sql`, puis
 `migration_05_security_hardening.sql`, puis `migration_06_acces_avances.sql`,
 puis `migration_07_correctifs_registre.sql`, puis
 `migration_08_impots_customs.sql`, puis `migration_09_licenciement_cloture.sql`,
-puis `migration_10_partage_factures.sql`, dans cet ordre.
+puis `migration_10_partage_factures.sql`, puis `migration_11_fix_cloture.sql`,
+puis `migration_12_contrats_auto.sql`, dans cet ordre.
+
+## Contrats de travail automatiques
+
+- **Génération automatique** : dès qu'un compte est validé, son contrat de
+  travail se crée tout seul (Direction/DRH). Si son grade change plus
+  tard, un **avenant** référençant le contrat précédent est généré
+  automatiquement (nouveau poste, nouvelle rémunération).
+- **Bouton "Générer un contrat pour…"** sur la page Contrats, pour créer
+  rétroactivement le contrat d'un employé déjà présent avant cette mise à
+  jour.
+- **Contrat cliquable** dans la liste : l'ouvrir affiche le texte complet,
+  avec un bouton **Modifier** (Direction/DRH) pour corriger une info
+  manquante ou une faute directement sur le site, et un bouton **PDF**
+  pour le télécharger.
+- **Suppression** possible comme pour n'importe quel contrat.
+- Les nouvelles infos personnelles nécessaires (date de naissance, ville,
+  nationalité, n° de sécurité sociale/ID joueur, date de visite médicale)
+  se remplissent depuis "Modifier mes informations" sur la fiche employé
+  — par la personne elle-même ou par la Direction.
+- **Signature** : rendue avec une police calligraphiée, pas une vraie
+  image scannée, mais un rendu propre et cohérent à l'écran comme dans le
+  PDF.
+
+Le texte du contrat reprend exactement ton modèle (tous les articles). Si
+tu veux ajuster une formulation quelque part, dis-moi laquelle et je
+corrige `lib/contractText.ts`.
 
 ## Historique filtré, partage de facture, réorganisation
 

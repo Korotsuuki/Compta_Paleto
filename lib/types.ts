@@ -29,6 +29,11 @@ export interface Profile {
   role: Role;
   valide: boolean;
   licencie: boolean;
+  date_naissance: string | null;
+  ville_naissance: string | null;
+  nationalite: string | null;
+  numero_secu: string | null;
+  date_visite_medicale: string | null;
 }
 
 export interface EmployeeFull extends Profile {
@@ -135,6 +140,20 @@ export interface TransferTarget {
   nom: string | null;
 }
 
+export interface ContratChamps {
+  nom_prenom: string;
+  date_naissance: string | null;
+  ville_naissance: string | null;
+  nationalite: string | null;
+  telephone: string | null;
+  numero_secu: string | null;
+  date_visite_medicale: string | null;
+  date_debut_contrat: string;
+  grade_nom: string | null;
+  salaire_texte: string;
+  date_signature: string;
+}
+
 export interface Contrat {
   id: string;
   titre: string;
@@ -143,6 +162,10 @@ export interface Contrat {
   contenu: string | null;
   fichier_url: string | null;
   date_signature: string;
+  type: "upload" | "auto" | "avenant";
+  champs: ContratChamps | null;
+  avenant_de: string | null;
+  numero_avenant: number;
 }
 
 export interface EmployeeResume {
